@@ -16,23 +16,20 @@ pub enum SystemMonitorTargets {
 /// is not set up to track that metric, the corresponding field in this struct
 /// will be empty.
 #[derive(Debug)]
-pub struct SystemPollResult<'a> {
-    pub cpu_usage: &'a [Measurement],
-    pub cpu_temperature: &'a [Measurement],
-    pub cpu_fanspeed: &'a [Measurement],
-    pub ram_usage: &'a [Measurement],
-
-    pub(in crate::monitoring) measurements: Vec<Measurement>,
+pub struct SystemPollResult {
+    pub cpu_usage: Vec<Measurement>,
+    pub cpu_temperature: Vec<Measurement>,
+    pub cpu_fanspeed: Vec<Measurement>,
+    pub ram_usage: Vec<Measurement>,
 }
 
-impl SystemPollResult<'_> {
+impl SystemPollResult {
     pub fn new() -> Self {
         SystemPollResult {
-            cpu_usage: &[],
-            cpu_temperature: &[],
-            cpu_fanspeed: &[],
-            ram_usage: &[],
-            measurements: vec![Measurement::default(); 0],
+            cpu_usage: vec![Measurement::default(); 0],
+            cpu_temperature: vec![Measurement::default(); 0],
+            cpu_fanspeed: vec![Measurement::default(); 0],
+            ram_usage: vec![Measurement::default(); 0],
         }
     }
 }
@@ -51,16 +48,13 @@ pub trait SystemMonitor {
 
 /// Struct TimePoint encodes a moment in time.
 #[derive(Copy, Clone, Debug)]
-pub struct TimePoint(Instant);
-
-#[derive(Copy, Clone, Debug)]
-pub struct MeasurementName([u8; 64]);
+pub struct TimePoint(pub Instant);
 
 /// Measurement encodes a single measurement of some floating point metric
 /// at a moment in time.
 #[derive(Clone, Debug)]
 pub struct Measurement {
-    pub name: MeasurementName,
+    pub name: String,
     pub time: TimePoint,
     pub value: f32,
 }
@@ -71,16 +65,10 @@ impl Default for TimePoint {
     }
 }
 
-impl Default for MeasurementName {
-    fn default() -> Self {
-        MeasurementName([0; 64])
-    }
-}
-
 impl Default for Measurement {
     fn default() -> Self {
         Measurement {
-            name: MeasurementName::default(),
+            name: String::default(),
             time: TimePoint::default(),
             value: 0 as f32,
         }

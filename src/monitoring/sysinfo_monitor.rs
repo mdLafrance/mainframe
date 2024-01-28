@@ -1,6 +1,10 @@
+use std::time::Instant;
+
 use sysinfo::System;
 
-use super::monitor::{Measurement, SystemMonitor, SystemMonitorTargets, SystemPollResult};
+use super::monitor::{
+    Measurement, SystemMonitor, SystemMonitorTargets, SystemPollResult, TimePoint,
+};
 
 pub struct SiSystemMonitor {
     sys: System,
@@ -29,19 +33,27 @@ impl SystemMonitor for SiSystemMonitor {
     }
 
     fn poll(&mut self) -> SystemPollResult {
+        let mut res = SystemPollResult::new();
+        let time = Instant::now();
+
         for k in self.target_flags.as_slice() {
             match k {
+                // Fetch cpu usage
                 SystemMonitorTargets::CpuUsage => {
                     self.sys.refresh_cpu();
 
                     for cpu in self.sys.cpus() {
-                        println!("CPU: {:?}", cpu);
+                        res.cpu_usage.push(Measurement {
+                            name: cpu.name().to_owned(),
+                            time: TimePoint(time),
+                            value: cpu.cpu_usage(),
+                        });
                     }
                 }
                 _ => (),
             }
         }
 
-        SystemPollResult::new()
+        res
     }
 }
