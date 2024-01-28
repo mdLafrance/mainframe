@@ -1,3 +1,2 @@
-pub mod cpu;
-pub mod metric;
-pub mod ringbuffer;
+pub mod monitor;
+pub mod sysinfo_monitor;

@@ -1,6 +1,6 @@
+/// Module `ringbuffer.rs` implements a `RingBuffer` object for managing
+/// wrapping fixed-size buffers.
 use std::cmp::min;
-
-use num_traits::Zero;
 
 /// RingBuffer is a wrapper around std::Vec, which holds a predefined amount
 /// of items, and for which inserts on a full buffer will push items off the
