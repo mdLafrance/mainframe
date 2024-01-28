@@ -1,7 +1,16 @@
+use core::panic;
 use std::error::Error;
 
-use mainframe::app;
+use mainframe::app::MainFrameApp;
+use mainframe::panic_handler;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    Ok(app::run()?)
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    panic_handler::init();
+
+    let app = MainFrameApp::new();
+
+    app.run().await?;
+
+    Ok(())
 }

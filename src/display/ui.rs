@@ -10,14 +10,17 @@ use crossterm::{
 };
 use human_bytes::human_bytes;
 use ratatui::{
+    layout::Layout,
     prelude::*,
     widgets::{
         block::{Position, Title},
-        Block, BorderType, Borders, Padding, Paragraph, Row, Table, Wrap,
+        canvas::{Canvas, Map, MapResolution, Rectangle},
+        Block, BorderType, Borders, Gauge, LineGauge, Padding, Paragraph, RenderDirection, Row,
+        Sparkline, Table, Wrap,
     },
 };
 
-use crate::monitoring::system::SystemInformation;
+use crate::monitoring::system::{DiskInformation, SystemInformation};
 
 /// Setup the necessary components to make terminal ui calls.
 pub fn init_ui() -> Result<Terminal<CrosstermBackend<Stdout>>, Box<dyn Error>> {
@@ -110,4 +113,93 @@ pub fn draw_sys_info(s: &SystemInformation, f: &mut Frame, area: Rect) {
         .style(Style::new().white().on_black());
 
     f.render_widget(p, area)
+}
+
+pub fn display_disk_info(d: &DiskInformation, f: &mut Frame, area: Rect) {
+    // Surround display information in block
+    let block = Block::default()
+        .borders(Borders::TOP)
+        .padding(Padding::new(2, 2, 1, 1))
+        .title(format!(" Disk {} ", d.name));
+
+    let inner_area = block.inner(area);
+
+    f.render_widget(block, area);
+
+    // Setup layout for display elements
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![
+            Constraint::Length(4),
+            Constraint::Length(1),
+            Constraint::Percentage(99),
+        ])
+        .split(inner_area);
+
+    // Draw name and title information
+    let formatted_message = vec![
+        format!("{} {}", d.kind, d.name),
+        format!(
+            "Free space: {} ({}b)",
+            human_bytes(d.available_space as f64),
+            d.available_space
+        ),
+        format!(
+            "Total space: {} ({}b)",
+            human_bytes(d.total_space as f64),
+            d.total_space
+        ),
+    ];
+
+    f.render_widget(Paragraph::new(formatted_message.join("\n")), layout[0]);
+
+    let usage_percent = 1.0 - (d.available_space as f64 / d.total_space as f64);
+
+    let gauge = Gauge::default()
+        .gauge_style(
+            Style::default()
+                .fg(get_color_for_range(usage_percent, (0.0, 1.0)))
+                .bg(Color::DarkGray),
+        )
+        .label(format!(
+            "{} free ({}% used)",
+            human_bytes(d.available_space as f64),
+            format!("{:.2}", 100.0 * usage_percent)
+        ))
+        .ratio(usage_percent);
+
+    f.render_widget(gauge, layout[1]);
+}
+
+pub fn draw_graph(f: &mut Frame, area: Rect) {
+    let graph = Canvas::default()
+        .block(Block::default().title("Canvas").borders(Borders::ALL))
+        .x_bounds([-180.0, 180.0])
+        .y_bounds([-90.0, 90.0])
+        .paint(|ctx| {
+            ctx.draw(&Map {
+                resolution: MapResolution::High,
+                color: Color::White,
+            });
+            ctx.layer();
+
+            ctx.draw(&Rectangle {
+                x: 10.0,
+                y: 20.0,
+                width: 10.0,
+                height: 10.0,
+                color: Color::Red,
+            });
+        });
+    f.render_widget(graph, area);
+}
+
+fn get_color_for_range(v: f64, r: (f64, f64)) -> Color {
+    let x = (v - r.0) / r.1;
+
+    match x {
+        0.0..=0.6 => Color::Green,
+        0.6..=0.85 => Color::Yellow,
+        _ => Color::Red,
+    }
 }

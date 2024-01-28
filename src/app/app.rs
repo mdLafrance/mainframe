@@ -1,44 +1,112 @@
-use std::{error::Error, time::Instant};
-
-use ratatui::widgets::Block;
-
-use crate::{
-    display::ui::{self, init_ui, shutdown_ui, ui_should_close},
-    monitoring::{
-        polling::{SystemPollResult, SystemPoller, SystemPollerTargets},
-        sysinfo_shim::SiSystemPoller,
-    },
-    ringbuffer::RingBuffer,
+use ratatui::{
+    widgets::{Block, Borders},
+    Frame,
 };
+use systemstat::Duration;
 
-pub fn run() -> Result<(), Box<dyn Error>> {
-    let mut sys_poller =
-        SiSystemPoller::new().with_poll_targets(vec![SystemPollerTargets::CpuUsage]);
+use crate::display::ui::{init_ui, shutdown_ui};
 
-    let sys_info = sys_poller.get_system_info();
+use std::error::Error;
 
-    let mut recorded_metrics = RingBuffer::<SystemPollResult>::new(2);
+enum MFAMessage {
+    Exit,
+}
 
-    let mut terminal = init_ui()?;
+struct MFAUiState {}
 
-    let mut t0 = Instant::now();
+pub struct MainFrameApp {
+    frame_rate: usize,
+    tick_rate: usize,
+}
 
-    while !ui_should_close()? {
-        terminal.draw(|f| {
-            let frame = ui::draw_app_outline(f);
+impl MainFrameApp {
+    /// Set the ui refresh interval for the app instance.
+    ///
+    /// Interval is taken in hz - refreshes per second.
+    /// An app with a 60 fps refresh rate would supply interval=60
+    pub fn with_frame_rate(mut self, interval: usize) -> Self {
+        self.frame_rate = interval;
 
-            ui::draw_sys_info(&sys_info, f, frame)
-        })?;
+        self
+    }
 
-        // Poll new data if time elapsed
-        if t0.elapsed().as_millis() > 1000 {
-            t0 = Instant::now();
+    /// Set the event polling interval for the app instance.
+    ///
+    /// Interval is taken in hz - refreshes per second.
+    pub fn with_tick_rate(mut self, interval: usize) -> Self {
+        self.tick_rate = interval;
 
-            recorded_metrics.add(sys_poller.poll());
+        self
+    }
+
+    pub fn new() -> Self {
+        MainFrameApp {
+            frame_rate: 30,
+            tick_rate: 10,
         }
     }
 
-    shutdown_ui()?;
+    pub async fn run(self) -> Result<(), Box<dyn Error>> {
+        // Setup
+        let mut terminal = init_ui()?;
 
-    Ok(())
+        // --- Init sync primitives --- //
+        // Sender and receiver provide a message passing service to pass flags
+        // to the render thread.
+        let (ui_tx, mut ui_rx) = tokio::sync::mpsc::unbounded_channel::<MFAMessage>();
+
+        let mut tick_interval =
+            tokio::time::interval(Duration::from_secs_f64(1.0 / self.tick_rate as f64));
+
+        let mut redraw_interval =
+            tokio::time::interval(Duration::from_secs_f64(1.0 / self.frame_rate as f64));
+
+        // Launch ui thread
+        let ui_thread = tokio::spawn(async move {
+            // Sleep until next redraw timer
+            redraw_interval.tick().await;
+
+            // See if there are pending messages from host thread
+            let msg = match ui_rx.try_recv() {
+                Ok(x) => Some(x),
+                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => None,
+                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                    return;
+                }
+            };
+
+            match msg {
+                Some(MFAMessage::Exit) => {
+                    return;
+                }
+                _ => (),
+            };
+
+            // Draw ui elements
+            terminal.draw(|f| draw(f));
+        });
+
+        let mut x = 0;
+        // Run main processing loop
+        loop {
+            tick_interval.tick().await;
+
+            x += 1;
+
+            if x > 20 {
+                ui_tx.send(MFAMessage::Exit)?;
+                break;
+            }
+        }
+
+        ui_thread.await?;
+
+        // Teardown
+        shutdown_ui()?;
+        Ok(())
+    }
+}
+
+fn draw(f: &mut Frame) {
+    f.render_widget(Block::new().title("asdf").borders(Borders::ALL), f.size());
 }

@@ -2,12 +2,12 @@
 ///
 use std::time::Instant;
 
-use sysinfo::System;
+use sysinfo::{DiskKind, Disks, System};
 
 pub use super::polling::{
     Measurement, SystemPollResult, SystemPoller, SystemPollerTargets, TimePoint,
 };
-use super::system::SystemInformation;
+use super::system::{DiskInformation, SystemInformation};
 
 pub struct SiSystemPoller {
     sys: System,
@@ -30,6 +30,26 @@ impl SiSystemPoller {
             physical_processors: self.sys.physical_core_count().unwrap_or_else(|| 0),
             total_memory: self.sys.total_memory(),
         }
+    }
+
+    /// Construct a disk data object for each disk.
+    pub fn get_disk_info(&mut self) -> Vec<DiskInformation> {
+        let mut disks = Vec::<DiskInformation>::new();
+
+        for disk in &Disks::new_with_refreshed_list() {
+            disks.push(DiskInformation {
+                name: disk.name().to_string_lossy().to_string(),
+                kind: match disk.kind() {
+                    DiskKind::SSD => "SSD".to_string(),
+                    DiskKind::HDD => "HDD".to_string(),
+                    DiskKind::Unknown(s) => format!("??? ({})", s),
+                },
+                available_space: disk.total_space() - disk.available_space(),
+                total_space: disk.total_space(),
+            });
+        }
+
+        disks
     }
 }
 
