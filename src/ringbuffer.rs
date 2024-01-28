@@ -7,7 +7,7 @@ use std::cmp::min;
 /// end of the list.
 pub struct RingBuffer<T>
 where
-    T: Copy + Default,
+    T: Clone + Default,
 {
     size: usize,
     count: usize,
@@ -17,7 +17,7 @@ where
 
 impl<T> RingBuffer<T>
 where
-    T: Copy + Default,
+    T: Clone + Default,
 {
     /// Creates a new [`RingBuffer`] object of size `size`.
     pub fn new(size: usize) -> Self {
@@ -28,13 +28,18 @@ where
             head: 0,
             count: 0,
             size,
-            data: vec![T::default(); size],
+            data: data,
         }
     }
 
     /// Add the new given item `x` to the front of the ring buffer.
     pub fn add(&mut self, x: T) {
-        self.data[self.head] = x;
+        if self.data.len() < self.size {
+            self.data.push(x);
+        } else {
+            self.data[self.head] = x;
+        }
+
         self.head = (self.head + 1) % self.size;
         self.count = min(self.count + 1, self.size);
     }
@@ -43,7 +48,7 @@ where
     ///
     /// Indeces greater than the size of the ring buffer will simply wrap around.
     pub fn peek(&self, idx: usize) -> T {
-        self.data[idx % self.size]
+        self.data[idx % self.size].clone()
     }
 
     /// Get the length of the ring buffer

@@ -1,3 +1,5 @@
+/// Module sysinfo_shim provides wrappings around the sysinfo crate.
+///
 use std::time::Instant;
 
 use sysinfo::System;
@@ -5,10 +7,30 @@ use sysinfo::System;
 pub use super::polling::{
     Measurement, SystemPollResult, SystemPoller, SystemPollerTargets, TimePoint,
 };
+use super::system::SystemInformation;
 
 pub struct SiSystemPoller {
     sys: System,
     target_flags: Vec<SystemPollerTargets>,
+}
+
+impl SiSystemPoller {
+    /// Get data and construct a SystemInformation object.
+    ///
+    /// Calls `poll()` once in order to obtain accurate readings.
+    pub fn get_system_info(&mut self) -> SystemInformation {
+        self.poll();
+
+        SystemInformation {
+            os: System::name().unwrap_or_else(|| "".to_owned()),
+            kernel_version: System::kernel_version().unwrap_or_else(|| "".to_owned()),
+            os_version: System::os_version().unwrap_or_else(|| "".to_owned()),
+            host_name: System::host_name().unwrap_or_else(|| "".to_owned()),
+            logical_processors: self.sys.cpus().len(),
+            physical_processors: self.sys.physical_core_count().unwrap_or_else(|| 0),
+            total_memory: self.sys.total_memory(),
+        }
+    }
 }
 
 impl SystemPoller for SiSystemPoller {
@@ -24,7 +46,7 @@ impl SystemPoller for SiSystemPoller {
         }
     }
 
-    fn set_poll_targets(&mut self, targets: Vec<SystemPollerTargets>) -> &mut Self {
+    fn with_poll_targets(mut self, targets: Vec<SystemPollerTargets>) -> Self {
         self.target_flags = targets;
 
         self

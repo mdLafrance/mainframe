@@ -1,3 +1,5 @@
+#![allow(patterns_in_fns_without_body)]
+
 use std::time::Instant;
 
 #[repr(u8)]
@@ -15,7 +17,7 @@ pub enum SystemPollerTargets {
 /// Fields correspond to flag options of SystemPollerTargets, and if the monitor
 /// is not set up to track that metric, the corresponding field in this struct
 /// will be empty.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SystemPollResult {
     pub cpu_usage: Vec<Measurement>,
     pub cpu_temperature: Vec<Measurement>,
@@ -34,13 +36,19 @@ impl SystemPollResult {
     }
 }
 
+impl Default for SystemPollResult {
+    fn default() -> Self {
+        SystemPollResult::new()
+    }
+}
+
 /// Trait SystemPoller defines the expected interface for an object which can
 /// be used to monitor the performance of the system.
 pub trait SystemPoller {
     fn new() -> Self;
 
     /// Specify that this system monitor should monitor the given targets.
-    fn set_poll_targets(&mut self, targets: Vec<SystemPollerTargets>) -> &mut Self;
+    fn with_poll_targets(mut self, targets: Vec<SystemPollerTargets>) -> Self;
 
     fn poll(&mut self) -> SystemPollResult;
 }
