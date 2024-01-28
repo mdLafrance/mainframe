@@ -103,4 +103,25 @@ pub mod tests {
         assert!(rb.peek(1) == 2 as f32);
         assert!(rb.peek(2) == 3 as f32);
     }
+
+    #[test]
+    fn test_use() {
+        let mut rb = RingBuffer::<f32>::new(3);
+
+        rb.add(1 as f32);
+        rb.add(2 as f32);
+        rb.add(3 as f32);
+
+        assert!(rb.peek(0) == 1 as f32);
+        assert!(rb.peek(1) == 2 as f32);
+        assert!(rb.peek(2) == 3 as f32);
+
+        rb.add(4 as f32);
+        rb.add(5 as f32);
+        rb.add(6 as f32);
+
+        assert!(rb.peek(0) == 4 as f32);
+        assert!(rb.peek(1) == 5 as f32);
+        assert!(rb.peek(2) == 6 as f32);
+    }
 }
