@@ -1,2 +1,2 @@
-pub mod monitor;
-pub mod sysinfo_monitor;
+pub mod polling;
+pub mod sysinfo_poller;

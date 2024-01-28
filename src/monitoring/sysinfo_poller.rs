@@ -2,34 +2,32 @@ use std::time::Instant;
 
 use sysinfo::System;
 
-use super::monitor::{
-    Measurement, SystemMonitor, SystemMonitorTargets, SystemPollResult, TimePoint,
+pub use super::polling::{
+    Measurement, SystemPollResult, SystemPoller, SystemPollerTargets, TimePoint,
 };
 
-pub struct SiSystemMonitor {
+pub struct SiSystemPoller {
     sys: System,
-    target_flags: Vec<SystemMonitorTargets>,
-    poll_rate: usize,
-    poll_buffer_size: usize,
+    target_flags: Vec<SystemPollerTargets>,
 }
 
-impl SystemMonitor for SiSystemMonitor {
-    /// Initialize a new SystemMonitor compatible object using the sysinfo
+impl SystemPoller for SiSystemPoller {
+    /// Initialize a new SystemPoller compatible object using the sysinfo
     /// crate as a backend.
-    fn new(
-        target_flags: Vec<SystemMonitorTargets>,
-        poll_rate: usize,
-        poll_buffer_size: usize,
-    ) -> Self {
+    fn new() -> Self {
         let mut sys = System::new_all();
         sys.refresh_all();
 
-        SiSystemMonitor {
+        SiSystemPoller {
             sys,
-            target_flags,
-            poll_rate,
-            poll_buffer_size,
+            target_flags: vec![],
         }
+    }
+
+    fn set_poll_targets(&mut self, targets: Vec<SystemPollerTargets>) -> &mut Self {
+        self.target_flags = targets;
+
+        self
     }
 
     fn poll(&mut self) -> SystemPollResult {
@@ -39,7 +37,7 @@ impl SystemMonitor for SiSystemMonitor {
         for k in self.target_flags.as_slice() {
             match k {
                 // Fetch cpu usage
-                SystemMonitorTargets::CpuUsage => {
+                SystemPollerTargets::CpuUsage => {
                     self.sys.refresh_cpu();
 
                     for cpu in self.sys.cpus() {

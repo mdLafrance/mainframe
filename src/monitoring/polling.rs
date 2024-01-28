@@ -2,7 +2,7 @@ use std::time::Instant;
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy)]
-pub enum SystemMonitorTargets {
+pub enum SystemPollerTargets {
     CpuUsage = 0,
     CpuTemperature = 1,
     CpuFanspeed = 2,
@@ -10,9 +10,9 @@ pub enum SystemMonitorTargets {
 }
 
 /// SystemPollResult struct holds the latest polled system data, and is
-/// returned from a call to `SystemMonitor::poll()`.
+/// returned from a call to `SystemPoller::poll()`.
 ///
-/// Fields correspond to flag options of SystemMonitorTargets, and if the monitor
+/// Fields correspond to flag options of SystemPollerTargets, and if the monitor
 /// is not set up to track that metric, the corresponding field in this struct
 /// will be empty.
 #[derive(Debug)]
@@ -34,14 +34,13 @@ impl SystemPollResult {
     }
 }
 
-/// Trait SystemMonitor defines the expected interface for an object which can
+/// Trait SystemPoller defines the expected interface for an object which can
 /// be used to monitor the performance of the system.
-pub trait SystemMonitor {
-    fn new(
-        target_flags: Vec<SystemMonitorTargets>,
-        poll_rate: usize,
-        poll_buffer_size: usize,
-    ) -> Self;
+pub trait SystemPoller {
+    fn new() -> Self;
+
+    /// Specify that this system monitor should monitor the given targets.
+    fn set_poll_targets(&mut self, targets: Vec<SystemPollerTargets>) -> &mut Self;
 
     fn poll(&mut self) -> SystemPollResult;
 }

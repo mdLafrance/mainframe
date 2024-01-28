@@ -1,11 +1,7 @@
-use mainframe::monitoring::{
-    monitor::{SystemMonitor, SystemMonitorTargets},
-    sysinfo_monitor::SiSystemMonitor,
-};
+use std::error::Error;
 
-fn main() {
-    let mut s = SiSystemMonitor::new(vec![SystemMonitorTargets::CpuUsage], 0, 0);
-    let res = s.poll();
+use mainframe::app;
 
-    println!("Poll: {:?}", res);
+fn main() -> Result<(), Box<dyn Error>> {
+    Ok(app::run()?)
 }
