@@ -1,4 +1,3 @@
-use core::panic;
 use std::error::Error;
 
 use mainframe::app::MainFrameApp;
@@ -10,7 +9,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let app = MainFrameApp::new();
 
-    app.run().await?;
+    app.run().await.unwrap();
 
     Ok(())
 }

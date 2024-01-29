@@ -1,15 +1,27 @@
+use crossterm::event::{Event, EventStream, KeyCode, KeyEvent};
+use futures::StreamExt;
+use scopeguard::guard;
+
 use ratatui::{
     widgets::{Block, Borders},
     Frame,
 };
 use systemstat::Duration;
 
-use crate::display::ui::{init_ui, shutdown_ui};
+use crate::{
+    display::ui::{init_ui, shutdown_ui},
+    errors::MFError,
+};
 
 use std::error::Error;
 
 enum MFAMessage {
     Exit,
+}
+
+enum MFAAppEvent {
+    KeyPress,
+    Quit,
 }
 
 struct MFAUiState {}
@@ -39,9 +51,15 @@ impl MainFrameApp {
         self
     }
 
+    /// Intstantiate a new app instance.
+    ///
+    /// A new instance of mainframe app has not acquired any resources, nor
+    /// taken control of the terminal yet. New app instances should be modified
+    /// before the call to `run()`, at which point event and render resources
+    /// are acquired.
     pub fn new() -> Self {
         MainFrameApp {
-            frame_rate: 30,
+            frame_rate: 20,
             tick_rate: 10,
         }
     }
@@ -50,10 +68,19 @@ impl MainFrameApp {
         // Setup
         let mut terminal = init_ui()?;
 
+        defer! {
+            // Teardown
+            // NOTE: UI shutdown must happen after every other event and
+            // terminal call.
+            shutdown_ui().unwrap();
+        }
+
         // --- Init sync primitives --- //
-        // Sender and receiver provide a message passing service to pass flags
-        // to the render thread.
+        // Message channel for the draw thread
         let (ui_tx, mut ui_rx) = tokio::sync::mpsc::unbounded_channel::<MFAMessage>();
+
+        // Message channel for the event decoder thread
+        let (evt_tx, mut evt_rt) = tokio::sync::mpsc::unbounded_channel::<MFAAppEvent>();
 
         let mut tick_interval =
             tokio::time::interval(Duration::from_secs_f64(1.0 / self.tick_rate as f64));
@@ -63,46 +90,51 @@ impl MainFrameApp {
 
         // Launch ui thread
         let ui_thread = tokio::spawn(async move {
-            // Sleep until next redraw timer
-            redraw_interval.tick().await;
+            loop {
+                // Suspend until next redraw timer
+                redraw_interval.tick().await;
 
-            // See if there are pending messages from host thread
-            let msg = match ui_rx.try_recv() {
-                Ok(x) => Some(x),
-                Err(tokio::sync::mpsc::error::TryRecvError::Empty) => None,
-                Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
-                    return;
-                }
-            };
+                // Consume messages from host thread
+                let msg = match ui_rx.try_recv() {
+                    Ok(x) => Some(x),
+                    Err(tokio::sync::mpsc::error::TryRecvError::Empty) => None,
+                    Err(tokio::sync::mpsc::error::TryRecvError::Disconnected) => {
+                        return;
+                    }
+                };
 
-            match msg {
-                Some(MFAMessage::Exit) => {
-                    return;
-                }
-                _ => (),
-            };
+                match msg {
+                    Some(MFAMessage::Exit) => {
+                        return;
+                    }
+                    _ => (),
+                };
 
-            // Draw ui elements
-            terminal.draw(|f| draw(f));
+                // Draw ui elements
+                // terminal.draw(|f| draw(f));
+                println!("Redraw");
+            }
         });
 
-        let mut x = 0;
+        let mut events = EventStream::new();
+
         // Run main processing loop
-        loop {
-            tick_interval.tick().await;
-
-            x += 1;
-
-            if x > 20 {
-                ui_tx.send(MFAMessage::Exit)?;
-                break;
-            }
+        'mainloop: loop {
+            match events.next().await {
+                Some(Ok(Event::Key(evnt))) => match evnt.code {
+                    KeyCode::Char('q') => {
+                        break 'mainloop;
+                    }
+                    _ => (),
+                },
+                Some(Err(e)) => return Err(Box::new(e)),
+                None => break 'mainloop,
+                _ => (),
+            };
         }
 
-        ui_thread.await?;
+        ui_thread.abort();
 
-        // Teardown
-        shutdown_ui()?;
         Ok(())
     }
 }
