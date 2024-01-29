@@ -1,46 +1,23 @@
 use std::{
     error::Error,
     io::{stdout, Stdout},
-    sync::{Arc, Mutex},
 };
 
-use color_eyre::owo_colors::OwoColorize;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
 
-use itertools::Itertools;
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction::Horizontal, Layout, Rect},
-    style::{Color, Style, Stylize},
-    symbols::{self, block},
+    style::{Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding, Paragraph, Tabs},
+    widgets::{Block, Borders, Paragraph, Tabs},
     Frame, Terminal,
 };
 
-/// Contains the current ui state of the application.
-///
-/// To create a shareable reference to an instance of this struct, use
-/// `new_shared()`, which will create an arcmutex around a new struct instance.
-pub(crate) struct UIState {
-    pub(crate) current_tab: usize,
-}
-
-impl UIState {
-    /// Instantiate a new instance of this struct with default values.
-    pub(crate) fn new() -> Self {
-        UIState { current_tab: 0 }
-    }
-
-    /// Instantiate a new instance of this struct, and wrap it in an
-    /// arcmutex.
-    pub(crate) fn new_shared() -> Arc<Mutex<UIState>> {
-        Arc::new(Mutex::new(Self::new()))
-    }
-}
+use super::state::UIState;
 
 ///
 /// Setup the necessary components to make terminal ui calls.

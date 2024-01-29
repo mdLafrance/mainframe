@@ -5,7 +5,8 @@ use systemstat::Duration;
 
 use std::error::Error;
 
-use crate::display::ui::{draw, init_ui, shutdown_ui, UIState};
+use crate::display::state::UIState;
+use crate::display::ui::{draw, init_ui, shutdown_ui};
 
 enum MFAMessage {
     Exit,
