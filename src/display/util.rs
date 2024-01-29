@@ -56,7 +56,7 @@ pub fn draw_sys_info(s: &SystemInformation, f: &mut Frame, area: Rect) {
     f.render_widget(p, area)
 }
 
-pub fn display_disk_info(d: &DiskInformation, f: &mut Frame, area: Rect) {
+pub fn draw_disk_info(d: &DiskInformation, f: &mut Frame, area: Rect) {
     // Surround display information in block
     let block = Block::default()
         .borders(Borders::TOP)
