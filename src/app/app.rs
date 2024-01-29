@@ -4,9 +4,11 @@ use futures::StreamExt;
 use systemstat::Duration;
 
 use std::error::Error;
+use std::sync::{Arc, Mutex};
 
 use crate::display::state::UIState;
 use crate::display::ui::{draw, init_ui, shutdown_ui};
+use crate::monitoring::system::SystemData;
 
 enum MFAMessage {
     Exit,
@@ -56,7 +58,10 @@ impl MainFrameApp {
         // --- Init sync primitives --- //
         // ui state
         let app_state = UIState::new_shared();
+        let app_data = Arc::new(Mutex::new(SystemData::new_from_poll()));
+
         let _app_state_handle = app_state.clone();
+        let _app_data_handle = app_data.clone();
 
         // Message channel for the draw thread
         let (ui_tx, mut ui_rx) = tokio::sync::mpsc::unbounded_channel::<MFAMessage>();
@@ -88,9 +93,10 @@ impl MainFrameApp {
 
                 {
                     let s = _app_state_handle.lock().unwrap();
+                    let d = _app_data_handle.lock().unwrap();
 
                     // Draw ui elements
-                    terminal.draw(|f| draw(&s, f)).unwrap();
+                    terminal.draw(|f| draw(&s, &d, f)).unwrap();
                 }
             }
         });

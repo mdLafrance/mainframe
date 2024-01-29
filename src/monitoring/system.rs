@@ -1,3 +1,5 @@
+use super::sysinfo_shim::{SiSystemPoller, SystemPoller};
+
 /// Holds general information about the name, make, and model of the system.
 ///
 /// Should be instantiated via the appropriate system information monitoring
@@ -22,4 +24,21 @@ pub struct DiskInformation {
     pub kind: String,
     pub available_space: u64,
     pub total_space: u64,
+}
+
+/// Conglomorated system data about many sources.
+pub struct SystemData {
+    pub info: SystemInformation,
+    pub disks: Vec<DiskInformation>,
+}
+
+impl SystemData {
+    pub fn new_from_poll() -> Self {
+        let mut s = SiSystemPoller::new();
+
+        SystemData {
+            info: s.get_system_info(),
+            disks: s.get_disk_info(),
+        }
+    }
 }
