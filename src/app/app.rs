@@ -1,19 +1,11 @@
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent};
+use crossterm::event::{Event, EventStream, KeyCode};
 use futures::StreamExt;
-use scopeguard::guard;
 
-use ratatui::{
-    widgets::{Block, Borders},
-    Frame,
-};
 use systemstat::Duration;
 
-use crate::{
-    display::ui::{init_ui, shutdown_ui},
-    errors::MFError,
-};
-
 use std::error::Error;
+
+use crate::display::ui::{draw, init_ui, shutdown_ui, UIState};
 
 enum MFAMessage {
     Exit,
@@ -24,11 +16,8 @@ enum MFAAppEvent {
     Quit,
 }
 
-struct MFAUiState {}
-
 pub struct MainFrameApp {
-    frame_rate: usize,
-    tick_rate: usize,
+    refresh_rate: usize,
 }
 
 impl MainFrameApp {
@@ -36,17 +25,8 @@ impl MainFrameApp {
     ///
     /// Interval is taken in hz - refreshes per second.
     /// An app with a 60 fps refresh rate would supply interval=60
-    pub fn with_frame_rate(mut self, interval: usize) -> Self {
-        self.frame_rate = interval;
-
-        self
-    }
-
-    /// Set the event polling interval for the app instance.
-    ///
-    /// Interval is taken in hz - refreshes per second.
-    pub fn with_tick_rate(mut self, interval: usize) -> Self {
-        self.tick_rate = interval;
+    pub fn with_refresh_rage(mut self, hz: usize) -> Self {
+        self.refresh_rate = hz;
 
         self
     }
@@ -58,10 +38,7 @@ impl MainFrameApp {
     /// before the call to `run()`, at which point event and render resources
     /// are acquired.
     pub fn new() -> Self {
-        MainFrameApp {
-            frame_rate: 20,
-            tick_rate: 10,
-        }
+        MainFrameApp { refresh_rate: 20 }
     }
 
     pub async fn run(self) -> Result<(), Box<dyn Error>> {
@@ -76,17 +53,15 @@ impl MainFrameApp {
         }
 
         // --- Init sync primitives --- //
+        // ui state
+        let app_state = UIState::new_shared();
+        let _app_state_handle = app_state.clone();
+
         // Message channel for the draw thread
         let (ui_tx, mut ui_rx) = tokio::sync::mpsc::unbounded_channel::<MFAMessage>();
 
-        // Message channel for the event decoder thread
-        let (evt_tx, mut evt_rt) = tokio::sync::mpsc::unbounded_channel::<MFAAppEvent>();
-
-        let mut tick_interval =
-            tokio::time::interval(Duration::from_secs_f64(1.0 / self.tick_rate as f64));
-
         let mut redraw_interval =
-            tokio::time::interval(Duration::from_secs_f64(1.0 / self.frame_rate as f64));
+            tokio::time::interval(Duration::from_secs_f64(1.0 / self.refresh_rate as f64));
 
         // Launch ui thread
         let ui_thread = tokio::spawn(async move {
@@ -110,9 +85,12 @@ impl MainFrameApp {
                     _ => (),
                 };
 
-                // Draw ui elements
-                // terminal.draw(|f| draw(f));
-                println!("Redraw");
+                {
+                    let s = _app_state_handle.lock().unwrap();
+
+                    // Draw ui elements
+                    terminal.draw(|f| draw(&s, f)).unwrap();
+                }
             }
         });
 
@@ -120,10 +98,22 @@ impl MainFrameApp {
 
         // Run main processing loop
         'mainloop: loop {
+            // Consume pending events
             match events.next().await {
                 Some(Ok(Event::Key(evnt))) => match evnt.code {
+                    // Quit key
                     KeyCode::Char('q') => {
                         break 'mainloop;
+                    }
+                    // Tab selection keys
+                    KeyCode::Char('h') => {
+                        app_state.lock().unwrap().current_tab = 0;
+                    }
+                    KeyCode::Char('u') => {
+                        app_state.lock().unwrap().current_tab = 1;
+                    }
+                    KeyCode::Char('d') => {
+                        app_state.lock().unwrap().current_tab = 2;
                     }
                     _ => (),
                 },
@@ -137,8 +127,4 @@ impl MainFrameApp {
 
         Ok(())
     }
-}
-
-fn draw(f: &mut Frame) {
-    f.render_widget(Block::new().title("asdf").borders(Borders::ALL), f.size());
 }

@@ -1,4 +1,0 @@
-enum MFAAppEvenv {
-    KeyPress,
-    Quit,
-}
