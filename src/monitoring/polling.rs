@@ -13,8 +13,7 @@ use super::system::{DiskInformation, SystemInformation};
 pub enum SystemPollerTarget {
     CpuUsage = 0,
     CpuTemperature = 1,
-    CpuFanspeed = 2,
-    RamUsage = 3,
+    Gpu = 2,
 }
 
 /// SystemPollResult struct holds the latest polled system data, and is
@@ -28,6 +27,24 @@ pub struct SystemPollResult {
     pub cpu_usage: Vec<Measurement>,
     pub cpu_temperature: Measurement,
     pub ram_usage: Vec<Measurement>,
+    pub gpu_info: Vec<GpuPollResult>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GpuPollResult {
+    pub name: String,
+    pub temp: f32,
+    pub usage: f32,
+}
+
+impl Default for GpuPollResult {
+    fn default() -> Self {
+        GpuPollResult {
+            name: "???".to_string(),
+            temp: 0f32,
+            usage: 0f32,
+        }
+    }
 }
 
 impl SystemPollResult {
@@ -36,6 +53,7 @@ impl SystemPollResult {
             cpu_usage: vec![Measurement::default(); 0],
             cpu_temperature: Measurement::default(),
             ram_usage: vec![Measurement::default(); 0],
+            gpu_info: vec![],
         }
     }
 }
@@ -51,6 +69,7 @@ impl Default for SystemPollResult {
 pub struct SystemPoller {
     sysinfo_system: sysinfo::System,
     systemstat_system: systemstat::System,
+    machine_info_system: machine_info::Machine,
     target_flags: Vec<SystemPollerTarget>,
 }
 
@@ -64,6 +83,7 @@ impl SystemPoller {
         SystemPoller {
             sysinfo_system,
             systemstat_system: systemstat::System::new(),
+            machine_info_system: machine_info::Machine::new(),
             target_flags: vec![],
         }
     }
@@ -119,6 +139,18 @@ impl SystemPoller {
                         },
                     };
                     // println!("Polled temp: {:?}", res.cpu_temperature);
+                }
+                SystemPollerTarget::Gpu => {
+                    res.gpu_info = self
+                        .machine_info_system
+                        .graphics_status()
+                        .iter()
+                        .map(|g| GpuPollResult {
+                            name: g.id.clone(),
+                            usage: g.gpu as f32,
+                            temp: g.temperature as f32,
+                        })
+                        .collect()
                 }
                 _ => (),
             }

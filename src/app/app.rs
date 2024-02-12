@@ -131,6 +131,7 @@ impl MainFrameApp {
             let mut system_poller = SystemPoller::new().with_poll_targets(vec![
                 SystemPollerTarget::CpuUsage,
                 SystemPollerTarget::CpuTemperature,
+                SystemPollerTarget::Gpu,
             ]);
 
             loop {

@@ -26,7 +26,7 @@ use ratatui::{
 
 use crate::{
     monitoring::{
-        polling::{Measurement, SystemPollResult},
+        polling::{GpuPollResult, Measurement, SystemPollResult},
         system::SystemData,
     },
     ringbuffer::RingBuffer,
@@ -34,6 +34,7 @@ use crate::{
 
 use super::{
     cpu::{draw_cpu_average_block, draw_cpu_temp_block, draw_cpu_usage_block},
+    gpu::draw_gpu_info_block,
     state::UIState,
     util::{draw_disk_info, draw_sys_info},
 };
@@ -89,10 +90,12 @@ pub fn draw(
 
     let mut cpu_data = &emptyvec;
     let mut cpu_temp = &empty_measurement;
+    let mut gpu_data = &GpuPollResult::default();
 
     if let Some(p) = poll_data.last() {
         cpu_data = &p.cpu_usage;
         cpu_temp = &p.cpu_temperature;
+        gpu_data = &p.gpu_info[0];
     }
 
     // Split right side
@@ -111,8 +114,7 @@ pub fn draw(
     draw_cpu_temp_block(&cpu_temp, f, cpu_temp_area);
     draw_cpu_average_block(&cpu_data, f, cpu_average_area);
     draw_cpu_usage_block(state, &cpu_data, f, cpu_usage_area);
-
-    draw_disk_info(&data.disks[0], f, other_layout);
+    draw_gpu_info_block(&gpu_data, f, other_layout);
 }
 
 fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {
