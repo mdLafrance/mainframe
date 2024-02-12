@@ -26,5 +26,5 @@ pub fn draw_disk_page(data: &SystemData, f: &mut Frame, area: Rect) {
     // let area = Rect::new(0, 0, 10, 100);
     // scroll_view.render_widget(Paragraph::new(some_long_string), area);
     // let mut state = ScrollViewState::default();
-    // frame.render_stateful_widget(scroll_view, area, &mut state);
+    // f.render_stateful_widget(scroll_view, area, &mut state);
 }

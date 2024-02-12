@@ -10,18 +10,33 @@ use crossterm::{
 
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction::Horizontal, Layout, Rect},
+    layout::{
+        Constraint,
+        Direction::{self, Horizontal},
+        Layout, Rect,
+    },
     style::{Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{
+        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation::VerticalRight, ScrollbarState,
+        Tabs,
+    },
     Frame, Terminal,
 };
 
-use crate::monitoring::system::SystemData;
+use crate::{
+    monitoring::{
+        sysinfo_shim::{Measurement, SystemPollResult},
+        system::SystemData,
+    },
+    ringbuffer::RingBuffer,
+};
 
-use crate::display::pages;
-
-use super::state::UIState;
+use super::{
+    cpu::draw_cpu_usage_block,
+    state::UIState,
+    util::{draw_disk_info, draw_sys_info},
+};
 
 ///
 /// Setup the necessary components to make terminal ui calls.
@@ -38,7 +53,12 @@ pub fn shutdown_ui() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn draw(state: &UIState, data: &SystemData, f: &mut Frame) {
+pub fn draw(
+    state: &mut UIState,
+    data: &SystemData,
+    poll_data: &RingBuffer<SystemPollResult>,
+    f: &mut Frame,
+) {
     let l = Layout::default()
         .constraints(vec![Constraint::Length(2), Constraint::Percentage(99)])
         .split(f.size());
@@ -47,12 +67,33 @@ pub fn draw(state: &UIState, data: &SystemData, f: &mut Frame) {
 
     draw_header(state, f, header_area);
 
-    // Draw page according to tab
-    match state.current_tab {
-        1 => pages::draw_usage_page(&data, f, area),
-        2 => pages::draw_disk_page(&data, f, area),
-        _ => pages::draw_home_page(&data, f, area),
+    let content_layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Length(45), Constraint::Percentage(99)])
+        .split(area);
+
+    let (layout_l, layout_r) = (content_layout[0], content_layout[1]);
+
+    let sys_information_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Length(11), Constraint::Percentage(99)])
+        .split(layout_l);
+
+    let (sysinfo_layout, other_layout) = (sys_information_layout[0], sys_information_layout[1]);
+
+    draw_sys_info(&data.info, f, sysinfo_layout);
+
+    // Draw right side
+    let emptyvec: Vec<Measurement> = vec![];
+
+    let mut cpu_data = &emptyvec;
+
+    if let Some(p) = poll_data.last() {
+        cpu_data = &p.cpu_usage;
     }
+
+    draw_cpu_usage_block(state, &cpu_data, f, layout_r);
+    draw_disk_info(&data.disks[0], f, other_layout);
 }
 
 fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {

@@ -28,7 +28,7 @@ where
             head: 0,
             count: 0,
             size,
-            data: data,
+            data,
         }
     }
 
@@ -44,11 +44,18 @@ where
         self.count = min(self.count + 1, self.size);
     }
 
+    pub fn last(&self) -> Option<&T> {
+        match self.count {
+            0 => None,
+            _ => Some(self.peek(self.head)),
+        }
+    }
+
     /// Return ring buffer item at position `idx`.
     ///
     /// Indeces greater than the size of the ring buffer will simply wrap around.
-    pub fn peek(&self, idx: usize) -> T {
-        self.data[idx % self.size].clone()
+    pub fn peek(&self, idx: usize) -> &T {
+        &self.data[idx % self.size]
     }
 
     /// Get the length of the ring buffer
@@ -104,9 +111,9 @@ pub mod tests {
         rb.add(2 as f32);
         rb.add(3 as f32);
 
-        assert!(rb.peek(0) == 1 as f32);
-        assert!(rb.peek(1) == 2 as f32);
-        assert!(rb.peek(2) == 3 as f32);
+        assert!(rb.peek(0) == &1f32);
+        assert!(rb.peek(1) == &2f32);
+        assert!(rb.peek(2) == &3f32);
     }
 
     #[test]
@@ -117,16 +124,16 @@ pub mod tests {
         rb.add(2 as f32);
         rb.add(3 as f32);
 
-        assert!(rb.peek(0) == 1 as f32);
-        assert!(rb.peek(1) == 2 as f32);
-        assert!(rb.peek(2) == 3 as f32);
+        assert!(rb.peek(0) == &1f32);
+        assert!(rb.peek(1) == &2f32);
+        assert!(rb.peek(2) == &3f32);
 
         rb.add(4 as f32);
         rb.add(5 as f32);
         rb.add(6 as f32);
 
-        assert!(rb.peek(0) == 4 as f32);
-        assert!(rb.peek(1) == 5 as f32);
-        assert!(rb.peek(2) == 6 as f32);
+        assert!(rb.peek(0) == &4f32);
+        assert!(rb.peek(1) == &5f32);
+        assert!(rb.peek(2) == &6f32);
     }
 }

@@ -8,7 +8,11 @@ use std::sync::{Arc, Mutex};
 
 use crate::display::state::UIState;
 use crate::display::ui::{draw, init_ui, shutdown_ui};
+use crate::monitoring::sysinfo_shim::{
+    SiSystemPoller, SystemPollResult, SystemPoller, SystemPollerTargets,
+};
 use crate::monitoring::system::SystemData;
+use crate::ringbuffer::RingBuffer;
 
 enum MFAMessage {
     Exit,
@@ -20,7 +24,8 @@ enum MFAAppEvent {
 }
 
 pub struct MainFrameApp {
-    refresh_rate: usize,
+    refresh_rate: f32,
+    poll_rate: f32,
 }
 
 impl MainFrameApp {
@@ -28,8 +33,18 @@ impl MainFrameApp {
     ///
     /// Interval is taken in hz - refreshes per second.
     /// An app with a 60 fps refresh rate would supply interval=60
-    pub fn with_refresh_rate(mut self, hz: usize) -> Self {
+    pub fn with_refresh_rate(mut self, hz: f32) -> Self {
         self.refresh_rate = hz;
+
+        self
+    }
+
+    /// Set the data poll interval for the app instance.
+    ///
+    /// Interval is taken in hz - refreshes per second.
+    /// An app with a 60 fps refresh rate would supply interval=60
+    pub fn with_poll_rate(mut self, hz: f32) -> Self {
+        self.poll_rate = hz;
 
         self
     }
@@ -41,7 +56,10 @@ impl MainFrameApp {
     /// before the call to `run()`, at which point event and render resources
     /// are acquired.
     pub fn new() -> Self {
-        MainFrameApp { refresh_rate: 20 }
+        MainFrameApp {
+            refresh_rate: 20.0,
+            poll_rate: 1.0,
+        }
     }
 
     pub async fn run(self) -> Result<(), Box<dyn Error>> {
@@ -60,14 +78,21 @@ impl MainFrameApp {
         let app_state = UIState::new_shared();
         let app_data = Arc::new(Mutex::new(SystemData::new_from_poll()));
 
+        let poll_results = Arc::new(Mutex::new(RingBuffer::<SystemPollResult>::new(1)));
+
         let _app_state_handle = app_state.clone();
         let _app_data_handle = app_data.clone();
+        let _poll_result_handle_poll_thread = poll_results.clone();
+        let _poll_result_handle_draw_thread = poll_results.clone();
 
         // Message channel for the draw thread
         let (ui_tx, mut ui_rx) = tokio::sync::mpsc::unbounded_channel::<MFAMessage>();
 
         let mut redraw_interval =
-            tokio::time::interval(Duration::from_secs_f64(1.0 / self.refresh_rate as f64));
+            tokio::time::interval(Duration::from_secs_f32(1.0 / self.refresh_rate));
+
+        let mut polling_interval =
+            tokio::time::interval(Duration::from_secs_f32(1.0 / self.poll_rate));
 
         // Launch ui thread
         let ui_thread = tokio::spawn(async move {
@@ -92,11 +117,30 @@ impl MainFrameApp {
                 };
 
                 {
-                    let s = _app_state_handle.lock().unwrap();
+                    let mut s = _app_state_handle.lock().unwrap();
                     let d = _app_data_handle.lock().unwrap();
+                    let r = _poll_result_handle_draw_thread.lock().unwrap();
 
                     // Draw ui elements
-                    terminal.draw(|f| draw(&s, &d, f)).unwrap();
+                    terminal.draw(|f| draw(&mut s, &d, &r, f)).unwrap();
+                }
+            }
+        });
+
+        // Launch polling thread
+        let polling_thread = tokio::spawn(async move {
+            let mut system_poller =
+                SiSystemPoller::new().with_poll_targets(vec![SystemPollerTargets::CpuUsage]);
+
+            loop {
+                polling_interval.tick().await;
+
+                let poll_result = system_poller.poll();
+
+                {
+                    let mut p = _poll_result_handle_poll_thread.lock().unwrap();
+
+                    p.add(poll_result);
                 }
             }
         });
@@ -122,6 +166,14 @@ impl MainFrameApp {
                     KeyCode::Char('d') => {
                         app_state.lock().unwrap().current_tab = 2;
                     }
+                    KeyCode::Up => {
+                        let mut s = app_state.lock().unwrap();
+                        s.cpu_scroll = (s.cpu_scroll as i32 - 1).max(0) as u16;
+                    }
+                    KeyCode::Down => {
+                        let mut s = app_state.lock().unwrap();
+                        s.cpu_scroll = (s.cpu_scroll as i32 + 1).max(0) as u16;
+                    }
                     _ => (),
                 },
                 Some(Err(e)) => return Err(Box::new(e)),
@@ -131,6 +183,7 @@ impl MainFrameApp {
         }
 
         ui_thread.abort();
+        polling_thread.abort();
 
         Ok(())
     }

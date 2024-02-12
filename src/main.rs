@@ -7,7 +7,9 @@ use mainframe::panic_handler;
 async fn main() -> Result<(), Box<dyn Error>> {
     panic_handler::init();
 
-    let app = MainFrameApp::new();
+    let app = MainFrameApp::new()
+        .with_poll_rate(2.0)
+        .with_refresh_rate(20.0);
 
     app.run().await.unwrap();
 

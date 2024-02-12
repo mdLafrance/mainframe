@@ -1,5 +1,14 @@
 use super::sysinfo_shim::{SiSystemPoller, SystemPoller};
 
+/// SystemData struct holds various pieces of static system data.
+///
+/// Static system data refers to data that will not change over the runtime of
+/// the system, such as system name, number of drives, total available RAM, etc.
+pub struct SystemData {
+    pub info: SystemInformation,
+    pub disks: Vec<DiskInformation>,
+}
+
 /// Holds general information about the name, make, and model of the system.
 ///
 /// Should be instantiated via the appropriate system information monitoring
@@ -24,12 +33,6 @@ pub struct DiskInformation {
     pub kind: String,
     pub available_space: u64,
     pub total_space: u64,
-}
-
-/// Conglomorated system data about many sources.
-pub struct SystemData {
-    pub info: SystemInformation,
-    pub disks: Vec<DiskInformation>,
 }
 
 impl SystemData {
