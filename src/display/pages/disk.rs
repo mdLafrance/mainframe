@@ -1,5 +1,6 @@
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Rect, Size},
+    widgets::Paragraph,
     Frame,
 };
 use tui_scrollview::ScrollView;

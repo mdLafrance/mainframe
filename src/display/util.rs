@@ -12,7 +12,7 @@ use crate::monitoring::system::{DiskInformation, SystemInformation};
 
 pub fn draw_sys_info(s: &SystemInformation, f: &mut Frame, area: Rect) {
     let style_category = |s: String| Span::styled(s, Style::new().add_modifier(Modifier::BOLD));
-    let style_value = |s: String| Span::styled(s, Style::new().add_modifier(Modifier::ITALIC));
+    let style_value = |s: String| Span::styled(s, Style::new());
 
     let text = vec![
         Line::from(vec![

@@ -28,7 +28,7 @@ impl MainFrameApp {
     ///
     /// Interval is taken in hz - refreshes per second.
     /// An app with a 60 fps refresh rate would supply interval=60
-    pub fn with_refresh_rage(mut self, hz: usize) -> Self {
+    pub fn with_refresh_rate(mut self, hz: usize) -> Self {
         self.refresh_rate = hz;
 
         self

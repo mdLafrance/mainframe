@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 ///
 /// To create a shareable reference to an instance of this struct, use
 /// `new_shared()`, which will create an arcmutex around a new struct instance.
-pub(crate) struct UIState {
+pub struct UIState {
     pub(crate) current_tab: usize,
 }
 
