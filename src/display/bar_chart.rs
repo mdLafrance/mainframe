@@ -1,7 +1,7 @@
 use core::panic;
 
 use ratatui::{
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
 };
 
@@ -46,7 +46,10 @@ pub fn generate_bar_chart<'a>(value: f32, bounds: (f32, f32), width: usize) -> B
     }
 
     for _ in 0..empty_blocks {
-        spans.push(" ".into());
+        spans.push(Span::styled(
+            format!("{}", BAR_CHARACTER),
+            Style::default().fg(Color::DarkGray),
+        ));
     }
 
     spans.push(end);
