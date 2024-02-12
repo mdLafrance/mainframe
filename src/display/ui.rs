@@ -33,7 +33,7 @@ use crate::{
 };
 
 use super::{
-    cpu::draw_cpu_usage_block,
+    cpu::{draw_cpu_average_block, draw_cpu_temp_block, draw_cpu_usage_block},
     state::UIState,
     util::{draw_disk_info, draw_sys_info},
 };
@@ -85,14 +85,33 @@ pub fn draw(
 
     // Draw right side
     let emptyvec: Vec<Measurement> = vec![];
+    let empty_measurement = Measurement::default();
 
     let mut cpu_data = &emptyvec;
+    let mut cpu_temp = &empty_measurement;
 
     if let Some(p) = poll_data.last() {
         cpu_data = &p.cpu_usage;
+        cpu_temp = &p.cpu_temperature;
     }
 
-    draw_cpu_usage_block(state, &cpu_data, f, layout_r);
+    // Split right side
+    let right_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![
+            Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Percentage(99),
+        ])
+        .split(layout_r);
+
+    let (cpu_temp_area, cpu_average_area, cpu_usage_area) =
+        (right_layout[0], right_layout[1], right_layout[2]);
+
+    draw_cpu_temp_block(&cpu_temp, f, cpu_temp_area);
+    draw_cpu_average_block(&cpu_data, f, cpu_average_area);
+    draw_cpu_usage_block(state, &cpu_data, f, cpu_usage_area);
+
     draw_disk_info(&data.disks[0], f, other_layout);
 }
 
@@ -107,7 +126,7 @@ fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {
     // Split layout
     let l = Layout::default()
         .direction(Horizontal)
-        .constraints(vec![Constraint::Percentage(99), Constraint::Min(20)])
+        .constraints(vec![Constraint::Percentage(99), Constraint::Length(1)])
         .split(header_area);
 
     let (title_area, tab_area) = (l[0], l[1]);

@@ -128,8 +128,10 @@ impl MainFrameApp {
 
         // Launch polling thread
         let polling_thread = tokio::spawn(async move {
-            let mut system_poller =
-                SystemPoller::new().with_poll_targets(vec![SystemPollerTarget::CpuUsage]);
+            let mut system_poller = SystemPoller::new().with_poll_targets(vec![
+                SystemPollerTarget::CpuUsage,
+                SystemPollerTarget::CpuTemperature,
+            ]);
 
             loop {
                 polling_interval.tick().await;

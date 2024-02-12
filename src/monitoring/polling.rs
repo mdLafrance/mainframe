@@ -115,9 +115,10 @@ impl SystemPoller {
                         time: TimePoint(time),
                         value: match self.systemstat_system.cpu_temp() {
                             Ok(v) => v,
-                            Err(_) => 0f32,
+                            Err(_) => 10f32,
                         },
                     };
+                    // println!("Polled temp: {:?}", res.cpu_temperature);
                 }
                 _ => (),
             }
