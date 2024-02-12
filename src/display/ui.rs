@@ -26,7 +26,7 @@ use ratatui::{
 
 use crate::{
     monitoring::{
-        sysinfo_shim::{Measurement, SystemPollResult},
+        polling::{Measurement, SystemPollResult},
         system::SystemData,
     },
     ringbuffer::RingBuffer,

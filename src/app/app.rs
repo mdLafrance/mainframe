@@ -8,9 +8,8 @@ use std::sync::{Arc, Mutex};
 
 use crate::display::state::UIState;
 use crate::display::ui::{draw, init_ui, shutdown_ui};
-use crate::monitoring::sysinfo_shim::{
-    SiSystemPoller, SystemPollResult, SystemPoller, SystemPollerTargets,
-};
+
+use crate::monitoring::polling::{SystemPollResult, SystemPoller, SystemPollerTarget};
 use crate::monitoring::system::SystemData;
 use crate::ringbuffer::RingBuffer;
 
@@ -130,7 +129,7 @@ impl MainFrameApp {
         // Launch polling thread
         let polling_thread = tokio::spawn(async move {
             let mut system_poller =
-                SiSystemPoller::new().with_poll_targets(vec![SystemPollerTargets::CpuUsage]);
+                SystemPoller::new().with_poll_targets(vec![SystemPollerTarget::CpuUsage]);
 
             loop {
                 polling_interval.tick().await;

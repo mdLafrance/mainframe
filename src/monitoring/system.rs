@@ -1,4 +1,4 @@
-use super::sysinfo_shim::{SiSystemPoller, SystemPoller};
+use super::polling::SystemPoller;
 
 /// SystemData struct holds various pieces of static system data.
 ///
@@ -37,7 +37,7 @@ pub struct DiskInformation {
 
 impl SystemData {
     pub fn new_from_poll() -> Self {
-        let mut s = SiSystemPoller::new();
+        let mut s = SystemPoller::new();
 
         SystemData {
             info: s.get_system_info(),

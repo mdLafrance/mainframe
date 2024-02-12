@@ -22,7 +22,7 @@ pub fn draw_cpu_usage_block(
     area: Rect,
 ) {
     let block = Block::default()
-        .title("CPU Usage")
+        .title(" CPU Usage ")
         .borders(Borders::ALL)
         .border_type(Rounded);
 
