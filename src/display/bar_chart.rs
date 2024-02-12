@@ -9,7 +9,13 @@ use super::util::get_color_for_range;
 
 static BAR_CHARACTER: char = '|';
 
-pub fn generate_bar_chart<'a>(value: f32, bounds: (f32, f32), width: usize) -> Box<Line<'a>> {
+pub fn generate_bar_chart<'a>(
+    name: &'a str,
+    value: f32,
+    bounds: (f32, f32),
+    name_width: usize,
+    width: usize,
+) -> Box<Line<'a>> {
     let start = Span::styled("[", Style::new().gray());
     let end = Span::styled("]", Style::new().gray());
 
@@ -21,7 +27,7 @@ pub fn generate_bar_chart<'a>(value: f32, bounds: (f32, f32), width: usize) -> B
         return Box::new(Line::from(vec![start, end]));
     }
 
-    let bar_characters = width as i32 - 2;
+    let bar_characters = width as i32 - 2 - name_width as i32;
 
     // yes this will panic if bounds[1] is 0, but as this is an internal api,
     // we will not be doing that please
@@ -32,7 +38,12 @@ pub fn generate_bar_chart<'a>(value: f32, bounds: (f32, f32), width: usize) -> B
     let empty_blocks = bar_characters - blocks;
 
     let mut spans = Vec::<Span>::new();
-    spans.reserve(width);
+
+    spans.push(name.into());
+
+    if name.len() < name_width {
+        spans.push(" ".repeat(name_width - name.len()).into());
+    }
 
     spans.push(start);
 

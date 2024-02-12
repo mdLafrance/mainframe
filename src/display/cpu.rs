@@ -35,7 +35,13 @@ pub fn draw_cpu_usage_block(
         _ => readings
             .iter()
             .map(|measurement: &Measurement| {
-                *generate_bar_chart(measurement.value, (0f32, 100f32), 50)
+                *generate_bar_chart(
+                    &measurement.name,
+                    measurement.value,
+                    (0f32, 100f32),
+                    8,
+                    inner_area.width as usize,
+                )
             })
             .collect(),
     };

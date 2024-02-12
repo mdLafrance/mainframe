@@ -8,8 +8,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     panic_handler::init();
 
     let app = MainFrameApp::new()
-        .with_poll_rate(2.0)
-        .with_refresh_rate(20.0);
+        .with_poll_rate(10f32)
+        .with_refresh_rate(30f32);
 
     app.run().await.unwrap();
 
