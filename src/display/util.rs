@@ -1,3 +1,4 @@
+use color_eyre::owo_colors::{DynColor, OwoColorize, Rgb, XtermColors};
 use human_bytes::human_bytes;
 
 use ratatui::{
@@ -96,23 +97,23 @@ pub fn draw_disk_info(d: &DiskInformation, f: &mut Frame, area: Rect) {
 
     let usage_percent = 1.0 - (d.available_space as f64 / d.total_space as f64);
 
-    let gauge = Gauge::default()
-        .gauge_style(
-            Style::default()
-                .fg(get_color_for_range(usage_percent, (0.0, 1.0)))
-                .bg(Color::DarkGray),
-        )
-        .label(format!(
-            "{} free ({}% used)",
-            human_bytes(d.available_space as f64),
-            format!("{:.2}", 100.0 * usage_percent)
-        ))
-        .ratio(usage_percent);
+    // let gauge = Gauge::default()
+    //     .gauge_style(
+    //         Style::default()
+    //             .fg(get_color_for_range(usage_percent, (0.0, 1.0)))
+    //             .bg(Color::DarkGray),
+    //     )
+    //     .label(format!(
+    //         "{} free ({}% used)",
+    //         human_bytes(d.available_space as f64),
+    //         format!("{:.2}", 100.0 * usage_percent)
+    //     ))
+    //     .ratio(usage_percent);
 
-    f.render_widget(gauge, layout[1]);
+    // f.render_widget(gauge, layout[1]);
 }
 
-pub fn get_color_for_range(v: f64, r: (f64, f64)) -> Color {
+pub fn get_color_for_range(v: f32, r: (f32, f32)) -> Color {
     let x = (v - r.0) / r.1;
 
     match x {
