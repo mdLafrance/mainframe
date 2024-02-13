@@ -1,6 +1,6 @@
 [package]
 name = "mainframe"
-version = "0.1.1"
+version = "0.1.2"
 description = "A lightweight TUI system monitor"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/mdLafrance/mainframe"

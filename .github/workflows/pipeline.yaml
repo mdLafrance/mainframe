@@ -4,7 +4,7 @@ on: push
 
 jobs: 
   test:
-    name: Test Suite
+    name: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -23,7 +23,7 @@ jobs:
           command: test
 
   lints:
-    name: Lints
+    name: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
