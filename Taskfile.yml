@@ -4,8 +4,21 @@ tasks:
   default:
     cmds:
       - task: lint
+      - task: test
+
+  test:
+    cmds:
+      - cargo test
 
   lint:
     cmds:
       - cargo clippy --fix
       - cargo fmt
+
+  build:
+    cmds:
+      - cargo build     
+
+  release:
+    cmds:
+      - cargo build --release
