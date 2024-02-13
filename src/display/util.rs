@@ -1,11 +1,10 @@
-use color_eyre::owo_colors::{DynColor, OwoColorize, Rgb, XtermColors};
 use human_bytes::human_bytes;
 
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, BorderType, Borders, Gauge, Padding, Paragraph},
+    widgets::{Block, BorderType, Borders, Padding, Paragraph},
     Frame,
 };
 
@@ -91,7 +90,7 @@ pub fn draw_disk_info(d: &DiskInformation, f: &mut Frame, area: Rect) {
 
     f.render_widget(Paragraph::new(formatted_message.join("\n")), layout[0]);
 
-    let usage_percent = 1.0 - (d.available_space as f64 / d.total_space as f64);
+    // let usage_percent = 1.0 - (d.available_space as f64 / d.total_space as f64);
 
     // let gauge = Gauge::default()
     //     .gauge_style(
@@ -113,8 +112,8 @@ pub fn get_color_for_range(v: f32, r: (f32, f32)) -> Color {
     let x = (v - r.0) / r.1;
 
     match x {
-        0.0..=0.6 => Color::Green,
-        0.6..=0.85 => Color::Yellow,
+        x if 0.0 <= x && x < 0.6 => Color::Green,
+        x if 0.6 <= x && x < 0.85 => Color::Yellow,
         _ => Color::Red,
     }
 }

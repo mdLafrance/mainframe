@@ -7,7 +7,7 @@ use ratatui::{
 
 use crate::monitoring::polling::Measurement;
 
-use super::{bar_chart::generate_bar_chart, state::UIState};
+use super::bar_chart::generate_bar_chart;
 
 /// Draw the cpu usage block to the given frame.
 ///

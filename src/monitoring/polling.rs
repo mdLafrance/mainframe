@@ -2,9 +2,8 @@
 
 use std::time::Instant;
 
-use get_sys_info::Platform;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
-use systemstat::System;
+use systemstat::Platform;
 
 use super::system::{DiskInformation, SystemInformation};
 
@@ -90,7 +89,7 @@ impl Default for SystemPollResult {
 /// should be recorded with [`SystemPoller::with_poll_targets()`].
 pub struct SystemPoller {
     sysinfo_system: sysinfo::System,
-    gsi_system: get_sys_info::System,
+    systemstat_system: systemstat::System,
     nvml: Option<Nvml>,
     target_flags: Vec<SystemPollerTarget>,
 }
@@ -104,7 +103,7 @@ impl SystemPoller {
 
         SystemPoller {
             sysinfo_system,
-            gsi_system: get_sys_info::System::new(),
+            systemstat_system: systemstat::System::new(),
             nvml: match Nvml::init() {
                 Ok(nvml) => Some(nvml),
                 Err(_) => None,
@@ -133,7 +132,7 @@ impl SystemPoller {
     ///         SystemPollerTarget::CpuTemperature
     ///     ]);
     ///
-    /// ...
+    /// // ...
     ///
     /// let result = s.poll(); // Cpu usage, and cpu temperature will be fetched.
     ///
@@ -169,7 +168,7 @@ impl SystemPoller {
                     res.cpu_temperature = Measurement {
                         time,
                         name: "".into(),
-                        value: match self.gsi_system.cpu_temp() {
+                        value: match self.systemstat_system.cpu_temp() {
                             Ok(v) => v,
                             Err(_) => 10f32,
                         },

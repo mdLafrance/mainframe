@@ -1,8 +1,6 @@
-use color_eyre::owo_colors::OwoColorize;
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
-    text::Line,
     widgets::{Block, Borders, Padding, Paragraph},
     Frame,
 };

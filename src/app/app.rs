@@ -17,11 +17,6 @@ enum MFAMessage {
     Exit,
 }
 
-enum MFAAppEvent {
-    KeyPress,
-    Quit,
-}
-
 pub struct MainFrameApp {
     refresh_rate: f32,
     poll_rate: f32,
@@ -159,6 +154,7 @@ impl MainFrameApp {
                 Some(Ok(Event::Key(evnt))) => match evnt.code {
                     // Quit key
                     KeyCode::Char('q') => {
+                        ui_tx.send(MFAMessage::Exit).unwrap();
                         break 'mainloop;
                     }
                     // Tab selection keys

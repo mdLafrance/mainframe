@@ -1,3 +1,5 @@
+#![deny(unused_extern_crates)]
+
 use std::error::Error;
 
 use clap::Parser;
