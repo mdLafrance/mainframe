@@ -15,9 +15,9 @@ use ratatui::{
         Direction::{self, Horizontal},
         Layout, Rect,
     },
-    style::{Style, Stylize},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Tabs},
+    widgets::{Block, Borders, Paragraph},
     Frame, Terminal,
 };
 
@@ -115,7 +115,11 @@ pub fn draw(
     draw_gpu_info_block(&p.gpu_info, f, gpu_area);
 }
 
-fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {
+/// Draws the header which sits at the top of the ui.
+///
+/// The header contains a title, version information, and tab information.
+/// The header also contains current keybinds.
+fn draw_header(_state: &UIState, f: &mut Frame, area: Rect) {
     // Draw header bg and outer styling elements
     let header_block = Block::default().borders(Borders::BOTTOM);
 
@@ -126,10 +130,10 @@ fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {
     // Split layout
     let l = Layout::default()
         .direction(Horizontal)
-        .constraints(vec![Constraint::Percentage(99), Constraint::Length(1)])
+        .constraints(vec![Constraint::Percentage(50), Constraint::Length(5)])
         .split(header_area);
 
-    let (title_area, tab_area) = (l[0], l[1]);
+    let (title_area, hints_area) = (l[0], l[1]);
 
     let title = Paragraph::new(vec![Line::from(vec![
         Span::styled("MAINFRAME", Style::new().bold()),
@@ -141,10 +145,13 @@ fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {
     ])])
     .alignment(ratatui::layout::Alignment::Left);
 
-    let tabs = Tabs::new(vec!["Home", "Usage", "Disks", "Help"])
-        .select(state.current_tab)
-        .padding(" ", " ");
+    // let tabs = Tabs::new(vec!["Home", "Usage", "Disks", "Help"])
+    //     .select(state.current_tab)
+    //     .padding(" ", " ");
+
+    let keybind_hints = Paragraph::new(Line::styled(" q: Quit ", Style::new().bg(Color::DarkGray)))
+        .alignment(ratatui::layout::Alignment::Right);
 
     f.render_widget(title, title_area);
-    f.render_widget(tabs, tab_area);
+    f.render_widget(keybind_hints, hints_area);
 }

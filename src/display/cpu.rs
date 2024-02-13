@@ -1,3 +1,4 @@
+// Contains functionality for drawing ui elements related to cpu reporting.
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     text::Line,
@@ -59,6 +60,9 @@ pub fn draw_cpu_usage_block(readings: &Vec<Measurement>, f: &mut Frame, area: Re
     f.render_widget(Paragraph::new(paragraphs[1].clone()), right_area);
 }
 
+/// Draws a blocked bar chart reporting cpu average usage.
+///
+/// Average usage is calculated as the average over all currently polled cpus.
 pub fn draw_cpu_average_block(readings: &Vec<Measurement>, f: &mut Frame, area: Rect) {
     let b = Block::default()
         .borders(Borders::ALL)
@@ -89,6 +93,7 @@ pub fn draw_cpu_average_block(readings: &Vec<Measurement>, f: &mut Frame, area: 
     f.render_widget(p, inner_area);
 }
 
+/// Draws a blocked bar chart reporting cpu temperature.
 pub fn draw_cpu_temp_block(cpu_temp: &Measurement, f: &mut Frame, area: Rect) {
     let b = Block::default()
         .borders(Borders::ALL)

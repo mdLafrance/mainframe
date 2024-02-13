@@ -1,5 +1,4 @@
-#![allow(patterns_in_fns_without_body)]
-
+/// module polling contains funcionality to poll system resources.
 use std::time::Instant;
 
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
@@ -7,7 +6,7 @@ use systemstat::Platform;
 
 use super::system::{DiskInformation, SystemInformation};
 
-/// SystemPollTargets enum allows selection of specific targets when performing
+/// [`SystemPollerTarget`] enum allows selection of specific targets when performing
 /// a system poll.
 ///
 /// The following polling targets are available:
@@ -39,6 +38,23 @@ pub struct SystemPollResult {
     pub gpu_info: Vec<GpuPollResult>,
 }
 
+impl Default for SystemPollResult {
+    /// Return a 0-initialized [`SystemPollResult`] object.
+    fn default() -> Self {
+        SystemPollResult {
+            cpu_usage: vec![Measurement::default(); 0],
+            cpu_temperature: Measurement::default(),
+            memory_usage: Measurement::default(),
+            gpu_info: vec![],
+        }
+    }
+}
+
+/// [`GpuPollResult`] contains gpu device data obtained by polling.
+///
+/// Due to the implementation of nvidia packages, it is not possible to filter
+/// for specific device information per-poll, and so a single gpu poll returns
+/// all device information.
 #[derive(Clone, Debug)]
 pub struct GpuPollResult {
     pub name: String,
@@ -57,23 +73,6 @@ impl Default for GpuPollResult {
             memory_total: 0u64,
             memory_used: 0u64,
         }
-    }
-}
-
-impl SystemPollResult {
-    pub fn new() -> Self {
-        SystemPollResult {
-            cpu_usage: vec![Measurement::default(); 0],
-            cpu_temperature: Measurement::default(),
-            memory_usage: Measurement::default(),
-            gpu_info: vec![],
-        }
-    }
-}
-
-impl Default for SystemPollResult {
-    fn default() -> Self {
-        SystemPollResult::new()
     }
 }
 
@@ -125,8 +124,10 @@ impl SystemPoller {
     ///
     /// # Example
     /// ```
+    /// use mainframe::monitoring::polling::*;
+    ///
     /// // Initialize poller to read cpu usage, and temperature only.
-    /// let s = SystemPoller::new()
+    /// let mut s = SystemPoller::new()
     ///     .with_poll_targets(vec![
     ///         SystemPollerTarget::CpuUsage,
     ///         SystemPollerTarget::CpuTemperature
@@ -147,7 +148,7 @@ impl SystemPoller {
     ///
     /// See [`Self::with_poll_targets()`] for more details about selecting poll targets.
     pub fn poll(&mut self) -> SystemPollResult {
-        let mut res = SystemPollResult::new();
+        let mut res = SystemPollResult::default();
         let time = TimePoint(Instant::now());
 
         for k in self.target_flags.as_slice() {
@@ -231,6 +232,7 @@ impl SystemPoller {
         disks
     }
 
+    /// Obtain [`GpuPollResult`] readings for all available gpu devices.
     fn poll_gpus(&self) -> Vec<GpuPollResult> {
         match &self.nvml {
             None => vec![],

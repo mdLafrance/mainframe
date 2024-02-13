@@ -1,3 +1,4 @@
+// Contains functionality for drawing ui elements related to gpu reporting.
 use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Style, Stylize},
@@ -9,6 +10,7 @@ use crate::monitoring::polling::GpuPollResult;
 
 use super::{bar_chart::generate_bar_chart, util::default_block};
 
+/// Draws a blocked element reporting gpu name, average usage, and temperature.
 pub fn draw_gpu_info_block(gpu_data: &Vec<GpuPollResult>, f: &mut Frame, area: Rect) {
     let gpu_block_height = 8;
 

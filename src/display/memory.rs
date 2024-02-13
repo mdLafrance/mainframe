@@ -10,6 +10,7 @@ use ratatui::{
 
 use super::{bar_chart::generate_bar_chart, util::get_color_for_range};
 
+/// Draws a blocked element with information about total, and used memory.
 pub fn draw_memory_usage_block(total_memory: f32, used_memory: f32, f: &mut Frame, area: Rect) {
     let usage_percent_text = format!("{}%", (100f32 * used_memory / total_memory) as usize);
 
