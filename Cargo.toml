@@ -1,6 +1,7 @@
 [package]
 name = "mainframe"
 version = "0.1.0"
+description = "A lightweight TUI system monitor"
 edition = "2021"
 exclude = [
     ".github/*"
