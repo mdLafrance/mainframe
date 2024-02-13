@@ -16,8 +16,6 @@ jobs:
                 toolchain: stable
                 override: true
                 components: rustfmt, clippy
-
-          - uses: actions-rs/cargo@v1
           - name: publish
             run: |
               cargo login --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
