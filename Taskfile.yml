@@ -1,0 +1,11 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: lint
+
+  lint:
+    cmds:
+      - cargo clippy --fix
+      - cargo fmt
