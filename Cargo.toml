@@ -11,6 +11,7 @@ bitflags = "2.4.2"
 color-eyre = "0.6.2"
 crossterm = {version = "0.27.0", features = ["event-stream"] }
 futures = "0.3.30"
+get_sys_info = "0.1.21"
 human_bytes = "0.4.3"
 itertools = "0.12.1"
 machine-info = "1.0.9"

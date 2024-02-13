@@ -40,10 +40,6 @@ pub fn draw_sys_info(s: &SystemInformation, f: &mut Frame, area: Rect) {
             style_category("Core count:        ".into()),
             style_value(s.physical_processors.to_string()),
         ]),
-        Line::from(vec![
-            style_category("Total Memory:      ".into()),
-            style_value(human_bytes(s.total_memory as f64)),
-        ]),
     ];
 
     let p = Paragraph::new(text).block(

@@ -83,6 +83,7 @@ impl MainFrameApp {
             SystemPollerTarget::CpuUsage,
             SystemPollerTarget::CpuTemperature,
             SystemPollerTarget::Gpu,
+            SystemPollerTarget::Memory,
         ]);
 
         poll_results.lock().unwrap().add(system_poller.poll());

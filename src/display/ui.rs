@@ -35,6 +35,7 @@ use crate::{
 use super::{
     cpu::{draw_cpu_average_block, draw_cpu_temp_block, draw_cpu_usage_block},
     gpu::draw_gpu_info_block,
+    memory::draw_memory_usage_block,
     state::UIState,
     util::{draw_disk_info, draw_sys_info},
 };
@@ -77,10 +78,18 @@ pub fn draw(
 
     let sys_information_layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Length(11), Constraint::Percentage(99)])
+        .constraints(vec![Constraint::Length(10), Constraint::Percentage(99)])
         .split(layout_l);
 
-    let (sysinfo_layout, other_layout) = (sys_information_layout[0], sys_information_layout[1]);
+    let (sysinfo_layout, left_area) = (sys_information_layout[0], sys_information_layout[1]);
+
+    // Split left layout
+    let left_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Length(5), Constraint::Percentage(99)])
+        .split(left_area);
+
+    let (memory_area, gpu_area) = (left_layout[0], left_layout[1]);
 
     draw_sys_info(&data.info, f, sysinfo_layout);
 
@@ -103,7 +112,13 @@ pub fn draw(
     draw_cpu_temp_block(&p.cpu_temperature, f, cpu_temp_area);
     draw_cpu_average_block(&p.cpu_usage, f, cpu_average_area);
     draw_cpu_usage_block(state, &p.cpu_usage, f, cpu_usage_area);
-    draw_gpu_info_block(&p.gpu_info, f, other_layout);
+    draw_memory_usage_block(
+        data.info.total_memory as f32,
+        p.memory_usage.value,
+        f,
+        memory_area,
+    );
+    draw_gpu_info_block(&p.gpu_info, f, gpu_area);
 }
 
 fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {

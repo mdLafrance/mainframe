@@ -2,19 +2,28 @@
 
 use std::time::Instant;
 
+use get_sys_info::Platform;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
-use systemstat::Platform;
+use systemstat::System;
 
 use super::system::{DiskInformation, SystemInformation};
 
 /// SystemPollTargets enum allows selection of specific targets when performing
 /// a system poll.
-#[repr(u8)]
+///
+/// The following polling targets are available:
+/// - [`Self::CpuUsage`] current usage percentages of available cores.
+/// - [`Self::CpuTemperature`] current average cpu temperature.
+/// - [`Self::Gpu`] current usage stats about available gpus. (NOTE: Due to
+/// limitations of nvidia's available monitoring packages, all gpu information
+/// has to be polled at once)
+/// - [`Self::Memory`] total and available RAM
 #[derive(Debug, Clone, Copy)]
 pub enum SystemPollerTarget {
-    CpuUsage = 0,
-    CpuTemperature = 1,
-    Gpu = 2,
+    CpuUsage,
+    CpuTemperature,
+    Gpu,
+    Memory,
 }
 
 /// SystemPollResult struct holds the latest polled system data, and is
@@ -27,7 +36,7 @@ pub enum SystemPollerTarget {
 pub struct SystemPollResult {
     pub cpu_usage: Vec<Measurement>,
     pub cpu_temperature: Measurement,
-    pub ram_usage: Vec<Measurement>,
+    pub memory_usage: Measurement,
     pub gpu_info: Vec<GpuPollResult>,
 }
 
@@ -57,7 +66,7 @@ impl SystemPollResult {
         SystemPollResult {
             cpu_usage: vec![Measurement::default(); 0],
             cpu_temperature: Measurement::default(),
-            ram_usage: vec![Measurement::default(); 0],
+            memory_usage: Measurement::default(),
             gpu_info: vec![],
         }
     }
@@ -81,7 +90,7 @@ impl Default for SystemPollResult {
 /// should be recorded with [`SystemPoller::with_poll_targets()`].
 pub struct SystemPoller {
     sysinfo_system: sysinfo::System,
-    systemstat_system: systemstat::System,
+    gsi_system: get_sys_info::System,
     nvml: Option<Nvml>,
     target_flags: Vec<SystemPollerTarget>,
 }
@@ -95,7 +104,7 @@ impl SystemPoller {
 
         SystemPoller {
             sysinfo_system,
-            systemstat_system: systemstat::System::new(),
+            gsi_system: get_sys_info::System::new(),
             nvml: match Nvml::init() {
                 Ok(nvml) => Some(nvml),
                 Err(_) => None,
@@ -112,6 +121,8 @@ impl SystemPoller {
     /// This function accepts a vector of [`SystemPollerTarget`] enum
     /// variants, which will determine which system data will be fetched on
     /// each call to [`SystemPoller::poll()`].
+    ///
+    /// See [`SystemPollerTarget`] for specific details about each enum variant.
     ///
     /// # Example
     /// ```
@@ -138,7 +149,7 @@ impl SystemPoller {
     /// See [`Self::with_poll_targets()`] for more details about selecting poll targets.
     pub fn poll(&mut self) -> SystemPollResult {
         let mut res = SystemPollResult::new();
-        let time = Instant::now();
+        let time = TimePoint(Instant::now());
 
         for k in self.target_flags.as_slice() {
             match k {
@@ -149,16 +160,16 @@ impl SystemPoller {
                     for cpu in self.sysinfo_system.cpus() {
                         res.cpu_usage.push(Measurement {
                             name: cpu.name().to_owned(),
-                            time: TimePoint(time),
                             value: cpu.cpu_usage(),
+                            time,
                         });
                     }
                 }
                 SystemPollerTarget::CpuTemperature => {
                     res.cpu_temperature = Measurement {
+                        time,
                         name: "".into(),
-                        time: TimePoint(time),
-                        value: match self.systemstat_system.cpu_temp() {
+                        value: match self.gsi_system.cpu_temp() {
                             Ok(v) => v,
                             Err(_) => 10f32,
                         },
@@ -166,6 +177,15 @@ impl SystemPoller {
                     // println!("Polled temp: {:?}", res.cpu_temperature);
                 }
                 SystemPollerTarget::Gpu => res.gpu_info = self.poll_gpus(),
+                SystemPollerTarget::Memory => {
+                    self.sysinfo_system.refresh_memory();
+
+                    res.memory_usage = Measurement {
+                        time,
+                        name: "memory".to_string(),
+                        value: self.sysinfo_system.used_memory() as f32,
+                    }
+                }
             }
         }
 
