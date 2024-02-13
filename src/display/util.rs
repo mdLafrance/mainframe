@@ -122,3 +122,10 @@ pub fn get_color_for_range(v: f32, r: (f32, f32)) -> Color {
         _ => Color::Red,
     }
 }
+
+pub fn default_block(title: &str) -> Block {
+    Block::default()
+        .title(title)
+        .border_type(BorderType::Rounded)
+        .borders(Borders::ALL)
+}

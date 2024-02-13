@@ -85,18 +85,7 @@ pub fn draw(
     draw_sys_info(&data.info, f, sysinfo_layout);
 
     // Draw right side
-    let emptyvec: Vec<Measurement> = vec![];
-    let empty_measurement = Measurement::default();
-
-    let mut cpu_data = &emptyvec;
-    let mut cpu_temp = &empty_measurement;
-    let mut gpu_data = &GpuPollResult::default();
-
-    if let Some(p) = poll_data.last() {
-        cpu_data = &p.cpu_usage;
-        cpu_temp = &p.cpu_temperature;
-        gpu_data = &p.gpu_info[0];
-    }
+    let p = poll_data.last().expect("No poll data could be read.");
 
     // Split right side
     let right_layout = Layout::default()
@@ -111,10 +100,10 @@ pub fn draw(
     let (cpu_temp_area, cpu_average_area, cpu_usage_area) =
         (right_layout[0], right_layout[1], right_layout[2]);
 
-    draw_cpu_temp_block(&cpu_temp, f, cpu_temp_area);
-    draw_cpu_average_block(&cpu_data, f, cpu_average_area);
-    draw_cpu_usage_block(state, &cpu_data, f, cpu_usage_area);
-    draw_gpu_info_block(&gpu_data, f, other_layout);
+    draw_cpu_temp_block(&p.cpu_temperature, f, cpu_temp_area);
+    draw_cpu_average_block(&p.cpu_usage, f, cpu_average_area);
+    draw_cpu_usage_block(state, &p.cpu_usage, f, cpu_usage_area);
+    draw_gpu_info_block(&p.gpu_info, f, other_layout);
 }
 
 fn draw_header(state: &UIState, f: &mut Frame, area: Rect) {

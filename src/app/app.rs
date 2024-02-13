@@ -79,6 +79,14 @@ impl MainFrameApp {
 
         let poll_results = Arc::new(Mutex::new(RingBuffer::<SystemPollResult>::new(1)));
 
+        let mut system_poller = SystemPoller::new().with_poll_targets(vec![
+            SystemPollerTarget::CpuUsage,
+            SystemPollerTarget::CpuTemperature,
+            SystemPollerTarget::Gpu,
+        ]);
+
+        poll_results.lock().unwrap().add(system_poller.poll());
+
         let _app_state_handle = app_state.clone();
         let _app_data_handle = app_data.clone();
         let _poll_result_handle_poll_thread = poll_results.clone();
@@ -128,12 +136,6 @@ impl MainFrameApp {
 
         // Launch polling thread
         let polling_thread = tokio::spawn(async move {
-            let mut system_poller = SystemPoller::new().with_poll_targets(vec![
-                SystemPollerTarget::CpuUsage,
-                SystemPollerTarget::CpuTemperature,
-                SystemPollerTarget::Gpu,
-            ]);
-
             loop {
                 polling_interval.tick().await;
 
@@ -159,15 +161,15 @@ impl MainFrameApp {
                         break 'mainloop;
                     }
                     // Tab selection keys
-                    KeyCode::Char('h') => {
-                        app_state.lock().unwrap().current_tab = 0;
-                    }
-                    KeyCode::Char('u') => {
-                        app_state.lock().unwrap().current_tab = 1;
-                    }
-                    KeyCode::Char('d') => {
-                        app_state.lock().unwrap().current_tab = 2;
-                    }
+                    // KeyCode::Char('h') => {
+                    //     app_state.lock().unwrap().current_tab = 0;
+                    // }
+                    // KeyCode::Char('u') => {
+                    //     app_state.lock().unwrap().current_tab = 1;
+                    // }
+                    // KeyCode::Char('d') => {
+                    //     app_state.lock().unwrap().current_tab = 2;
+                    // }
                     KeyCode::Up => {
                         let mut s = app_state.lock().unwrap();
                         s.cpu_scroll = (s.cpu_scroll as i32 - 1).max(0) as u16;

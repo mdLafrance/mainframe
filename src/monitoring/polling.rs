@@ -2,6 +2,7 @@
 
 use std::time::Instant;
 
+use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use systemstat::Platform;
 
 use super::system::{DiskInformation, SystemInformation};
@@ -35,6 +36,8 @@ pub struct GpuPollResult {
     pub name: String,
     pub temp: f32,
     pub usage: f32,
+    pub memory_total: u64,
+    pub memory_used: u64,
 }
 
 impl Default for GpuPollResult {
@@ -43,6 +46,8 @@ impl Default for GpuPollResult {
             name: "???".to_string(),
             temp: 0f32,
             usage: 0f32,
+            memory_total: 0u64,
+            memory_used: 0u64,
         }
     }
 }
@@ -64,12 +69,20 @@ impl Default for SystemPollResult {
     }
 }
 
-/// Trait SystemPoller defines the expected interface for an object which can
-/// be used to monitor the performance of the system.
+/// SystemPoller manages the polling of system data.
+///
+/// System data includes metrics like cpu usage, temperature, memory
+/// usage, and gpu usage, as well as time invariant data like hostname and
+/// operating system.
+///
+/// Instantiate new [`SystemPoller`] instances with [`SystemPoller::new()`].
+///
+/// By default, not all system metrics will be polled. Select which metrics
+/// should be recorded with [`SystemPoller::with_poll_targets()`].
 pub struct SystemPoller {
     sysinfo_system: sysinfo::System,
     systemstat_system: systemstat::System,
-    machine_info_system: machine_info::Machine,
+    nvml: Option<Nvml>,
     target_flags: Vec<SystemPollerTarget>,
 }
 
@@ -83,7 +96,10 @@ impl SystemPoller {
         SystemPoller {
             sysinfo_system,
             systemstat_system: systemstat::System::new(),
-            machine_info_system: machine_info::Machine::new(),
+            nvml: match Nvml::init() {
+                Ok(nvml) => Some(nvml),
+                Err(_) => None,
+            },
             target_flags: vec![],
         }
     }
@@ -93,6 +109,10 @@ impl SystemPoller {
     /// As polling can be an expensive process, only select the metrics you
     /// want to read.
     ///
+    /// This function accepts a vector of [`SystemPollerTarget`] enum
+    /// variants, which will determine which system data will be fetched on
+    /// each call to [`SystemPoller::poll()`].
+    ///
     /// # Example
     /// ```
     /// // Initialize poller to read cpu usage, and temperature only.
@@ -101,6 +121,11 @@ impl SystemPoller {
     ///         SystemPollerTarget::CpuUsage,
     ///         SystemPollerTarget::CpuTemperature
     ///     ]);
+    ///
+    /// ...
+    ///
+    /// let result = s.poll(); // Cpu usage, and cpu temperature will be fetched.
+    ///
     /// ```
     pub fn with_poll_targets(mut self, targets: Vec<SystemPollerTarget>) -> Self {
         self.target_flags = targets;
@@ -110,7 +135,7 @@ impl SystemPoller {
 
     /// Poll the system for each of the previously defined poll targets.
     ///
-    /// See [`with_poll_targets`] for more details.
+    /// See [`Self::with_poll_targets()`] for more details about selecting poll targets.
     pub fn poll(&mut self) -> SystemPollResult {
         let mut res = SystemPollResult::new();
         let time = Instant::now();
@@ -140,28 +165,16 @@ impl SystemPoller {
                     };
                     // println!("Polled temp: {:?}", res.cpu_temperature);
                 }
-                SystemPollerTarget::Gpu => {
-                    res.gpu_info = self
-                        .machine_info_system
-                        .graphics_status()
-                        .iter()
-                        .map(|g| GpuPollResult {
-                            name: g.id.clone(),
-                            usage: g.gpu as f32,
-                            temp: g.temperature as f32,
-                        })
-                        .collect()
-                }
-                _ => (),
+                SystemPollerTarget::Gpu => res.gpu_info = self.poll_gpus(),
             }
         }
 
         res
     }
 
-    /// Get data and construct a SystemInformation object.
+    /// Get a [`SystemInformation`] object representing the current system.
     ///
-    /// Calls `poll()` once in order to obtain accurate readings.
+    /// Calls [`Self::poll()`] once in order to obtain accurate readings.
     pub fn get_system_info(&mut self) -> SystemInformation {
         self.poll();
 
@@ -197,6 +210,47 @@ impl SystemPoller {
         }
 
         disks
+    }
+
+    fn poll_gpus(&self) -> Vec<GpuPollResult> {
+        match &self.nvml {
+            None => vec![],
+            Some(nvml) => {
+                let mut gpus = Vec::<GpuPollResult>::new();
+                gpus.reserve(nvml.device_count().unwrap() as usize);
+
+                for i in 0..nvml.device_count().unwrap() {
+                    let device = nvml.device_by_index(i).unwrap();
+
+                    let memory_info = device.memory_info();
+
+                    gpus.push(GpuPollResult {
+                        name: match device.name() {
+                            Ok(n) => n,
+                            Err(e) => e.to_string(),
+                        },
+                        temp: match device.temperature(TemperatureSensor::Gpu) {
+                            Ok(t) => t as f32,
+                            Err(_) => 0f32,
+                        },
+                        usage: match device.utilization_rates() {
+                            Ok(r) => r.gpu as f32,
+                            Err(_) => 0f32,
+                        },
+                        memory_total: match &memory_info {
+                            Ok(m) => m.total,
+                            Err(_) => 0,
+                        },
+                        memory_used: match memory_info {
+                            Ok(m) => m.used,
+                            Err(_) => 0,
+                        },
+                    })
+                }
+
+                gpus
+            }
+        }
     }
 }
 
