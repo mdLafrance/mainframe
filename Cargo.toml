@@ -2,6 +2,7 @@
 name = "mainframe"
 version = "0.1.0"
 description = "A lightweight TUI system monitor"
+license-file = "LICENSE.txt"
 edition = "2021"
 exclude = [
     ".github/*"
