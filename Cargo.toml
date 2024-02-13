@@ -2,11 +2,13 @@
 name = "mainframe"
 version = "0.1.0"
 description = "A lightweight TUI system monitor"
-license-file = "LICENSE.txt"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/mdLafrance/mainframe"
 edition = "2021"
 exclude = [
     ".github/*"
 ]
+categories = ["command-line-interface", "command-line-utilities", "visualization"]
 
 [dependencies]
 better-panic = "0.3.0"
