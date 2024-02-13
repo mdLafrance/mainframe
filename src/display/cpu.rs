@@ -1,9 +1,7 @@
 use ratatui::{
-    layout::Rect,
-    widgets::{
-        Block, BorderType::Rounded, Borders, Paragraph, Scrollbar,
-        ScrollbarOrientation::VerticalRight, ScrollbarState,
-    },
+    layout::{Constraint, Layout, Rect},
+    text::Line,
+    widgets::{Block, BorderType::Rounded, Borders, Padding, Paragraph},
     Frame,
 };
 
@@ -15,56 +13,50 @@ use super::{bar_chart::generate_bar_chart, state::UIState};
 ///
 /// The CPU usage block is a scrollable block element that contains usage stats
 /// for current cpus.
-pub fn draw_cpu_usage_block(
-    state: &mut UIState,
-    readings: &Vec<Measurement>,
-    f: &mut Frame,
-    area: Rect,
-) {
+pub fn draw_cpu_usage_block(readings: &Vec<Measurement>, f: &mut Frame, area: Rect) {
     let block = Block::default()
         .title(" CPU Usage ")
         .borders(Borders::ALL)
+        .padding(Padding::new(1, 1, 0, 0))
         .border_type(Rounded);
 
     let inner_area = block.inner(area);
 
+    let left_right_layout = Layout::default()
+        .direction(ratatui::layout::Direction::Horizontal)
+        .constraints(vec![
+            Constraint::Percentage(50),
+            Constraint::Length(1),
+            Constraint::Percentage(50),
+        ])
+        .split(inner_area);
+
+    let (left_area, right_area) = (left_right_layout[0], left_right_layout[2]);
+
     f.render_widget(block, area);
 
-    let lines = match readings.len() {
-        0 => vec![],
+    let mut paragraphs = vec![Vec::<Line>::new(); 2];
+
+    match readings.len() {
+        0 => (),
         _ => readings
             .iter()
-            .map(|measurement: &Measurement| {
-                *generate_bar_chart(
+            .enumerate()
+            .for_each(|(i, measurement): (usize, &Measurement)| {
+                let bar_chart = *generate_bar_chart(
                     &measurement.name,
                     measurement.value,
                     (0f32, 100f32),
-                    8,
-                    inner_area.width as usize,
-                )
-            })
-            .collect(),
+                    6,
+                    left_area.width as usize - 2,
+                );
+
+                paragraphs[i % 2].push(bar_chart);
+            }),
     };
 
-    let do_render_scrollbar = lines.len() > inner_area.height as usize;
-
-    if !do_render_scrollbar {
-        state.cpu_scroll = 0;
-    }
-
-    let p = Paragraph::new(lines.clone()).scroll((state.cpu_scroll as u16, 0));
-
-    let scrollbar = Scrollbar::new(VerticalRight)
-        .begin_symbol(Some("^"))
-        .end_symbol(Some("v"));
-
-    let mut scrollbar_state = ScrollbarState::new(lines.len()).position(state.cpu_scroll as usize);
-
-    f.render_widget(p, inner_area);
-
-    if do_render_scrollbar {
-        f.render_stateful_widget(scrollbar, inner_area, &mut scrollbar_state);
-    }
+    f.render_widget(Paragraph::new(paragraphs[0].clone()), left_area);
+    f.render_widget(Paragraph::new(paragraphs[1].clone()), right_area);
 }
 
 pub fn draw_cpu_average_block(readings: &Vec<Measurement>, f: &mut Frame, area: Rect) {

@@ -171,14 +171,6 @@ impl MainFrameApp {
                     // KeyCode::Char('d') => {
                     //     app_state.lock().unwrap().current_tab = 2;
                     // }
-                    KeyCode::Up => {
-                        let mut s = app_state.lock().unwrap();
-                        s.cpu_scroll = (s.cpu_scroll as i32 - 1).max(0) as u16;
-                    }
-                    KeyCode::Down => {
-                        let mut s = app_state.lock().unwrap();
-                        s.cpu_scroll = (s.cpu_scroll as i32 + 1).max(0) as u16;
-                    }
                     _ => (),
                 },
                 Some(Err(e)) => return Err(Box::new(e)),

@@ -17,18 +17,12 @@ use ratatui::{
     },
     style::{Style, Stylize},
     text::{Line, Span},
-    widgets::{
-        Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation::VerticalRight, ScrollbarState,
-        Tabs,
-    },
+    widgets::{Block, Borders, Paragraph, Tabs},
     Frame, Terminal,
 };
 
 use crate::{
-    monitoring::{
-        polling::{GpuPollResult, Measurement, SystemPollResult},
-        system::SystemData,
-    },
+    monitoring::{polling::SystemPollResult, system::SystemData},
     ringbuffer::RingBuffer,
 };
 
@@ -37,7 +31,7 @@ use super::{
     gpu::draw_gpu_info_block,
     memory::draw_memory_usage_block,
     state::UIState,
-    util::{draw_disk_info, draw_sys_info},
+    util::draw_sys_info,
 };
 
 ///
@@ -111,7 +105,7 @@ pub fn draw(
 
     draw_cpu_temp_block(&p.cpu_temperature, f, cpu_temp_area);
     draw_cpu_average_block(&p.cpu_usage, f, cpu_average_area);
-    draw_cpu_usage_block(state, &p.cpu_usage, f, cpu_usage_area);
+    draw_cpu_usage_block(&p.cpu_usage, f, cpu_usage_area);
     draw_memory_usage_block(
         data.info.total_memory as f32,
         p.memory_usage.value,
