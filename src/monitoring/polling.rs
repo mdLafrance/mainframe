@@ -207,10 +207,7 @@ impl SystemPoller {
             os_version: sysinfo::System::os_version().unwrap_or_else(|| "".to_owned()),
             host_name: sysinfo::System::host_name().unwrap_or_else(|| "".to_owned()),
             logical_processors: self.sysinfo_system.cpus().len(),
-            physical_processors: self
-                .sysinfo_system
-                .physical_core_count()
-                .unwrap_or(0),
+            physical_processors: self.sysinfo_system.physical_core_count().unwrap_or(0),
             total_memory: self.sysinfo_system.total_memory(),
         }
     }
