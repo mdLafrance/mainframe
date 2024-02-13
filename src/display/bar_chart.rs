@@ -49,13 +49,13 @@ static BAR_CHARACTER: char = '|';
 ///     20
 /// );
 /// ```
-pub fn generate_bar_chart<'a>(
-    name: &'a str,
+pub fn generate_bar_chart(
+    name: &str,
     value: f32,
     bounds: (f32, f32),
     name_width: usize,
     width: usize,
-) -> Box<Line<'a>> {
+) -> Box<Line<'_>> {
     let start = Span::styled("[", Style::new().gray());
     let end = Span::styled("]", Style::new().gray());
 

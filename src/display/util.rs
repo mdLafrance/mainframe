@@ -112,8 +112,8 @@ pub fn get_color_for_range(v: f32, r: (f32, f32)) -> Color {
     let x = (v - r.0) / r.1;
 
     match x {
-        x if 0.0 <= x && x < 0.6 => Color::Green,
-        x if 0.6 <= x && x < 0.85 => Color::Yellow,
+        x if (0.0..0.6).contains(&x) => Color::Green,
+        x if (0.6..0.85).contains(&x) => Color::Yellow,
         _ => Color::Red,
     }
 }

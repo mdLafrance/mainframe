@@ -75,7 +75,7 @@ pub fn draw_cpu_average_block(readings: &Vec<Measurement>, f: &mut Frame, area: 
 
     let mut load_avg = 0f32;
 
-    if readings.len() > 0 {
+    if !readings.is_empty() {
         load_avg = readings.iter().map(|m| m.value).sum::<f32>() / readings.len() as f32;
     }
 

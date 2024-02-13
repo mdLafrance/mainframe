@@ -1,6 +1,6 @@
 use clap::{arg, Parser};
 
-static ABOUT_STRING: &'static str = "
+static ABOUT_STRING: &str = "
 A fast and lightweight visual system monitor.
 Reports live data about cpu and gpu usage, temperature, memory consumption, 
 and more.

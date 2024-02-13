@@ -22,6 +22,12 @@ pub struct MainFrameApp {
     poll_rate: f32,
 }
 
+impl Default for MainFrameApp {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MainFrameApp {
     /// Set the ui refresh interval for the app instance.
     ///

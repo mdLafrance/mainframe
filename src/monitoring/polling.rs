@@ -93,6 +93,12 @@ pub struct SystemPoller {
     target_flags: Vec<SystemPollerTarget>,
 }
 
+impl Default for SystemPoller {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemPoller {
     /// Initialize a new SystemPoller compatible object using the sysinfo
     /// crate as a backend.
@@ -169,10 +175,7 @@ impl SystemPoller {
                     res.cpu_temperature = Measurement {
                         time,
                         name: "".into(),
-                        value: match self.systemstat_system.cpu_temp() {
-                            Ok(v) => v,
-                            Err(_) => 10f32,
-                        },
+                        value: self.systemstat_system.cpu_temp().unwrap_or(10f32),
                     };
                     // println!("Polled temp: {:?}", res.cpu_temperature);
                 }
@@ -207,7 +210,7 @@ impl SystemPoller {
             physical_processors: self
                 .sysinfo_system
                 .physical_core_count()
-                .unwrap_or_else(|| 0),
+                .unwrap_or(0),
             total_memory: self.sysinfo_system.total_memory(),
         }
     }
