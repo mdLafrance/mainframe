@@ -175,7 +175,7 @@ impl SystemPoller {
                     res.cpu_temperature = Measurement {
                         time,
                         name: "".into(),
-                        value: self.systemstat_system.cpu_temp().unwrap_or(10f32),
+                        value: self.systemstat_system.cpu_temp().unwrap_or(0f32),
                     };
                     // println!("Polled temp: {:?}", res.cpu_temperature);
                 }
